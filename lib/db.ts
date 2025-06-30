@@ -1,18 +1,13 @@
-import { neon } from "@neondatabase/serverless"
-import { drizzle } from "drizzle-orm/neon-http"
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 
 // Initialize the SQL client with the database URL
 // Handle cases where DATABASE_URL might not be available during build
-const databaseUrl = process.env.DATABASE_URL
-if (!databaseUrl && process.env.NODE_ENV === 'production') {
-  throw new Error('DATABASE_URL is required in production')
-}
-
-// Use a fallback for build/development when DATABASE_URL is not available
-const sql = databaseUrl ? neon(databaseUrl) : null
+const databaseUrl = process.env.DATABASE_URL;
+const sql = databaseUrl ? neon(databaseUrl) : null;
 
 // Initialize the Drizzle ORM only if we have a database connection
-export const db = sql ? drizzle(sql) : null
+export const db = sql ? drizzle(sql) : null;
 
 // Helper function for raw SQL queries
 export async function executeQuery<T = any>(query: string, params: any[] = []): Promise<T> {

@@ -10,11 +10,8 @@ export async function GET(request: NextRequest) {
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
-
-    // Check if database is available
     if (!process.env.DATABASE_URL) {
-      console.warn('Database not configured - returning empty settings')
-      return NextResponse.json({ settings: [] })
+      return NextResponse.json({ settings: [] });
     }
 
     const settings = await getSettings()
@@ -32,17 +29,14 @@ export async function POST(request: NextRequest) {
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ error: "Database not available" }, { status: 503 });
+    }
 
     const { key, value, description } = await request.json()
 
     if (!key || value === undefined) {
       return NextResponse.json({ error: "Key and value are required" }, { status: 400 })
-    }
-
-    // Check if database is available
-    if (!process.env.DATABASE_URL) {
-      console.warn('Database not configured - cannot create setting')
-      return NextResponse.json({ error: "Database not available" }, { status: 503 })
     }
 
     const setting = await createSetting(key, value, description || "")

@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
 
     // Check if database is available
     if (!process.env.DATABASE_URL) {
-      console.warn('Database not configured - returning mock stats')
       return NextResponse.json({ 
         stats: {
           totalUsers: 0,

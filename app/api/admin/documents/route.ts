@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ documents: [] });
+    }
 
     const searchParams = request.nextUrl.searchParams
     const limit = Number.parseInt(searchParams.get("limit") || "10")
@@ -38,6 +41,9 @@ export async function POST(request: NextRequest) {
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ error: "Database not available" }, { status: 503 });
+    }
 
     const { id, ...data } = await request.json()
 
@@ -65,6 +71,9 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ error: "Database not available" }, { status: 503 });
     }
 
     const searchParams = request.nextUrl.searchParams
