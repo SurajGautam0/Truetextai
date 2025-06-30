@@ -16,14 +16,14 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Confetti from "react-confetti";
 
-type ModelType = "truetext-render-api";
+type ModelType = "python-journalist-api" | "python-huggingface" | "truetext-rewriter";
 type StyleType = "general" | "academic" | "marketing" | "story" | "blog" | "paraphrase";
 type DetectorModeType = "normal" | "aggressive" | "ultra";
 
 const useAuth = () => ({ isAuthenticated: true, user: { credits: 100 } });
 
 const CircularProgress = ({ percentage, statusText }: { percentage: number, statusText: string }) => {
-  const circumference = 2 * Math.PI * 40;
+  const circumference = 2 * Math.PI * 30;
   const offset = circumference - (percentage / 100) * circumference;
   let strokeColor = "stroke-gray-400 dark:stroke-gray-600";
   let textColor = "text-gray-500 dark:text-gray-400";
@@ -34,36 +34,36 @@ const CircularProgress = ({ percentage, statusText }: { percentage: number, stat
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-32 h-32 sm:w-36 sm:h-36">
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+    <div className="relative flex flex-col items-center justify-center w-24 h-24">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 80 80">
         <circle
           className="stroke-current text-gray-200 dark:text-gray-700"
-          strokeWidth="8"
-          cx="50"
-          cy="50"
-          r="40"
+          strokeWidth="6"
+          cx="40"
+          cy="40"
+          r="30"
           fill="transparent"
         />
         <circle
           className={`stroke-current ${strokeColor} transition-all duration-500 ease-in-out`}
-          strokeWidth="8"
+          strokeWidth="6"
           strokeLinecap="round"
-          cx="50"
-          cy="50"
-          r="40"
+          cx="40"
+          cy="40"
+          r="30"
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          transform="rotate(-90 50 50)"
+          transform="rotate(-90 40 40)"
         />
       </svg>
       <div className="text-center">
-        <div className={`text-2xl sm:text-3xl font-bold ${textColor}`}>
-          {statusText === "Not Yet Analyzed" ? <FileText className="inline-block h-8 w-8" /> :
-           statusText === "Analyzing..." ? <Loader2 className="inline-block h-8 w-8 animate-spin" /> :
+        <div className={`text-lg font-bold ${textColor}`}>
+          {statusText === "Not Yet Analyzed" ? <FileText className="inline-block h-5 w-5" /> :
+           statusText === "Analyzing..." ? <Loader2 className="inline-block h-5 w-5 animate-spin" /> :
            `${percentage}%`}
         </div>
-        <div className="text-xs text-muted-foreground mt-1 px-2">{statusText}</div>
+        <div className="text-xs text-muted-foreground mt-1 px-1">{statusText}</div>
       </div>
     </div>
   );
@@ -295,58 +295,51 @@ export default function ProfessionalHumanizerPage() {
     <TooltipProvider delayDuration={300}>
       {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={200} />}
       
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 overflow-x-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
-          {/* Enhanced Header with Animation */}
-          <div className="text-center mb-12 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-cyan-400/10 blur-3xl -z-10 rounded-full"></div>
-            <div className="relative">
-              <div className="inline-flex items-center gap-3 mb-4 px-4 py-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-                <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">AI-Powered Text Enhancement</span>
-              </div>
-              <h1 className="text-5xl lg:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 mb-4 leading-tight">
-                AI Paraphraser Pro
-              </h1>
-              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                Transform AI-generated text into natural, human-like content with our advanced rewriting technology. 
-                <span className="block mt-2 text-lg text-slate-500 dark:text-slate-400">Professional • Fast • Undetectable</span>
-              </p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Compact Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 mb-3 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+              <Sparkles className="h-4 w-4 text-blue-600" />
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">AI Text Humanizer</span>
             </div>
+            <h1 className="text-3xl lg:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
+              AI Paraphraser Pro
+            </h1>
+            <p className="text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+              Transform AI-generated text into natural, human-like content
+            </p>
           </div>
-          {/* Enhanced Main Content Grid with Better Spacing */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-10">
-            {/* Left Panel - Input & Settings */}
-            <div className="xl:col-span-8 space-y-8 min-w-0">
-              {/* Enhanced Input Card */}
-              <Card className="border-0 shadow-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 p-6 border-b border-slate-200/50 dark:border-slate-600/50">
+          {/* Main Content Grid - More Compact Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Panel - Input */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Compact Input Card */}
+              <Card className="border shadow-sm bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-slate-700/50 dark:to-slate-600/50 px-4 py-3 border-b border-slate-200/50 dark:border-slate-600/50">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl font-bold flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <Edit className="h-6 w-6 text-blue-600" />
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <Edit className="h-4 w-4 text-blue-600" />
                       </div>
-                      <div>
-                        <span className="text-slate-800 dark:text-slate-100">Your Text</span>
-                        <p className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-1">Paste your content to humanize</p>
-                      </div>
+                      <span className="text-slate-800 dark:text-slate-100">Input Text</span>
                     </CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={handleTryExample} 
-                        className="text-sm hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200 rounded-lg px-4"
+                        className="text-xs px-3 py-1 h-7 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg"
                       >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Try Example
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Example
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={handleClearInput} 
                         disabled={!inputText} 
-                        className="text-sm hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200 rounded-lg px-4"
+                        className="text-xs px-3 py-1 h-7 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg"
                       >
                         Clear
                       </Button>
@@ -358,13 +351,13 @@ export default function ProfessionalHumanizerPage() {
                     <Textarea
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
-                      className="w-full min-h-[280px] text-base border-0 rounded-none focus-visible:ring-0 p-6 resize-none bg-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500 leading-relaxed"
-                      placeholder="Paste your AI-generated text here and watch it transform into natural, human-like content..."
+                      className="w-full h-48 text-sm border-0 rounded-none focus-visible:ring-0 p-4 resize-none bg-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                      placeholder="Paste your AI-generated text here to transform it into natural, human-like content..."
                     />
-                    <div className="absolute bottom-4 right-4 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200/50 dark:border-slate-600/50 shadow-sm">
+                    <div className="absolute bottom-3 right-3 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200/50 dark:border-slate-600/50">
                       <span className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        {inputWordCount} words
+                        <FileText className="h-3 w-3" />
+                        {inputWordCount}
                       </span>
                       <span className="text-slate-300 dark:text-slate-600">•</span>
                       <span>{inputCharCount} chars</span>
@@ -372,35 +365,33 @@ export default function ProfessionalHumanizerPage() {
                   </div>
                 </CardContent>
               </Card>
-              {/* Enhanced Settings Card */}
-              <Card className="border-0 shadow-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-slate-800 dark:to-slate-700 p-6 border-b border-slate-200/50 dark:border-slate-600/50">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <Settings2 className="h-6 w-6 text-purple-600" />
+
+              {/* Compact Settings Card */}
+              <Card className="border shadow-sm bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-slate-700/50 dark:to-slate-600/50 px-4 py-3 border-b border-slate-200/50 dark:border-slate-600/50">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                      <Settings2 className="h-4 w-4 text-purple-600" />
                     </div>
-                    <div>
-                      <span className="text-slate-800 dark:text-slate-100">Paraphrase Settings</span>
-                      <p className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-1">Customize your rewriting experience</p>
-                    </div>
+                    <span className="text-slate-800 dark:text-slate-100">Settings</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <BrainCircuit className="h-4 w-4" />
-                        AI Model
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <BrainCircuit className="h-3 w-3" />
+                        Model
                       </Label>
                       <Select value={model} onValueChange={(v) => setModel(v as ModelType)}>
-                        <SelectTrigger className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm">
+                        <SelectTrigger className="w-full h-9 rounded-lg border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700">
                           <SelectValue placeholder="Select model" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 dark:border-slate-600">
-                          <SelectItem value="truetext-render-api" className="rounded-lg">
+                        <SelectContent className="rounded-lg border-slate-200 dark:border-slate-600">
+                          <SelectItem value="truetext-render-api" className="rounded-md">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              Ninja 4.4 (Recommended)
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                              Ninja 4.4
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -408,29 +399,29 @@ export default function ProfessionalHumanizerPage() {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <Wand2 className="h-4 w-4" />
-                        Writing Style
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Wand2 className="h-3 w-3" />
+                        Style
                       </Label>
                       <Select value={styleOption} onValueChange={(v) => setStyleOption(v as StyleType)}>
-                        <SelectTrigger className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-sm">
+                        <SelectTrigger className="w-full h-9 rounded-lg border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700">
                           <SelectValue placeholder="Select style" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-200 dark:border-slate-600">
-                          <SelectItem value="general" className="rounded-lg">Same as Text</SelectItem>
-                          <SelectItem value="academic" className="rounded-lg">Academic</SelectItem>
-                          <SelectItem value="marketing" className="rounded-lg">Marketing</SelectItem>
-                          <SelectItem value="story" className="rounded-lg">Story</SelectItem>
-                          <SelectItem value="blog" className="rounded-lg">Blog</SelectItem>
-                          <SelectItem value="paraphrase" className="rounded-lg">Paraphrase Only</SelectItem>
+                        <SelectContent className="rounded-lg border-slate-200 dark:border-slate-600">
+                          <SelectItem value="general" className="rounded-md">General</SelectItem>
+                          <SelectItem value="academic" className="rounded-md">Academic</SelectItem>
+                          <SelectItem value="marketing" className="rounded-md">Marketing</SelectItem>
+                          <SelectItem value="story" className="rounded-md">Story</SelectItem>
+                          <SelectItem value="blog" className="rounded-md">Blog</SelectItem>
+                          <SelectItem value="paraphrase" className="rounded-md">Paraphrase</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     
-                    <div className="md:col-span-2 space-y-3">
-                      <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        Creativity Level: <span className="text-blue-600 dark:text-blue-400 font-bold">{level}</span>
+                    <div className="sm:col-span-2 space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        Creativity: <span className="text-blue-600 dark:text-blue-400 font-semibold">{level}</span>
                       </Label>
                       <div className="relative">
                         <Input 
@@ -439,143 +430,99 @@ export default function ProfessionalHumanizerPage() {
                           max="10" 
                           value={level} 
                           onChange={(e) => setLevel(parseInt(e.target.value))} 
-                          className="w-full h-3 bg-gradient-to-r from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800 rounded-full appearance-none cursor-pointer" 
+                          className="w-full h-2 bg-gradient-to-r from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800 rounded-full appearance-none cursor-pointer" 
                         />
-                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-                          <span>Conservative</span>
-                          <span>Balanced</span>
+                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          <span>Safe</span>
                           <span>Creative</span>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <Collapsible>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200">
-                            <ChevronDown className="h-4 w-4 mr-2" />
-                            <Settings2 className="h-4 w-4 mr-2" />
-                            Advanced Configuration
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-4 space-y-4 p-4 bg-slate-50/50 dark:bg-slate-700/50 rounded-xl border border-slate-200/50 dark:border-slate-600/50">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-600/50">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">British English</span>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>Use British spelling and grammar</TooltipContent>
-                                </Tooltip>
-                              </div>
-                              <Switch id="british-english" checked={useBritishEnglish} onCheckedChange={setUseBritishEnglish} />
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/50 dark:border-slate-600/50">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Skip Markdown</span>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Info className="h-4 w-4 text-slate-400" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>Preserve markdown formatting</TooltipContent>
-                                </Tooltip>
-                              </div>
-                              <Switch id="skip-markdown" checked={skipMarkdown} onCheckedChange={setSkipMarkdown} />
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-            {/* Right Panel - Analysis & Output */}
-            <div className="xl:col-span-4 space-y-8 min-w-0">
-              {/* Enhanced AI Analysis Card */}
-              <Card className="border-0 shadow-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl sticky top-6">
-                <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-700 p-6 border-b border-slate-200/50 dark:border-slate-600/50">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                      <BrainCircuit className="h-6 w-6 text-emerald-600" />
+
+            {/* Right Panel - Analysis & Actions */}
+            <div className="space-y-4">
+              {/* Compact AI Analysis Card */}
+              <Card className="border shadow-sm bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-slate-700/50 dark:to-slate-600/50 px-4 py-3 border-b border-slate-200/50 dark:border-slate-600/50">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                      <BrainCircuit className="h-4 w-4 text-emerald-600" />
                     </div>
-                    <div>
-                      <span className="text-slate-800 dark:text-slate-100">AI Detection</span>
-                      <p className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-1">Real-time analysis</p>
-                    </div>
+                    <span className="text-slate-800 dark:text-slate-100">AI Detection</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-8 flex flex-col items-center">
-                  <div className="relative">
+                <CardContent className="p-4 flex flex-col items-center">
+                  <div className="relative mb-4">
                     <CircularProgress percentage={aiProbability} statusText={currentAiStatusText} />
                     {isHumanQuality && (
-                      <div className="absolute -top-2 -right-2 animate-bounce">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <Sparkles className="h-3 w-3 text-white" />
+                      <div className="absolute -top-1 -right-1 animate-bounce">
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <Sparkles className="h-2 w-2 text-white" />
                         </div>
                       </div>
                     )}
                   </div>
                   
-                  <div className="mt-6 text-center space-y-3">
+                  <div className="text-center space-y-2 mb-4">
                     {isHumanQuality ? (
-                      <Badge variant="default" className="px-4 py-2 text-sm bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-200">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Human-like Quality Achieved!
+                      <Badge variant="default" className="px-3 py-1 text-xs bg-gradient-to-r from-green-500 to-emerald-500">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Human Quality!
                       </Badge>
                     ) : aiProbability > 70 ? (
-                      <Badge variant="destructive" className="px-4 py-2 text-sm bg-gradient-to-r from-red-500 to-rose-500">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Strong AI Detection
+                      <Badge variant="destructive" className="px-3 py-1 text-xs">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        High AI Detection
                       </Badge>
                     ) : aiProbability > 40 ? (
-                      <Badge variant="secondary" className="px-4 py-2 text-sm bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Moderate AI Detection
+                      <Badge variant="secondary" className="px-3 py-1 text-xs bg-yellow-500 text-white">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Moderate AI
                       </Badge>
                     ) : aiProbability > 0 ? (
-                      <Badge variant="secondary" className="px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Low AI Detection
+                      <Badge variant="secondary" className="px-3 py-1 text-xs bg-blue-500 text-white">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Low AI
                       </Badge>
                     ) : null}
                     
                     {processingTime && (
-                      <div className="text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
-                        ⚡ Processed in {processingTime}
+                      <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
+                        ⚡ {processingTime}
                       </div>
                     )}
                   </div>
                   
-                  <div className="mt-6 w-full space-y-3">
+                  <div className="w-full space-y-2">
                     <Button 
                       onClick={handleCheckForAI}
                       disabled={isAICheckActionDisabled}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className="w-full h-9 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-sm"
                       variant={isHumanQuality ? "outline" : "default"}
                     >
                       {isCheckingAI ? (
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <Wand2 className="h-5 w-5 mr-2" />
+                        <Wand2 className="h-4 w-4 mr-2" />
                       )}
-                      Analyze for AI
+                      Analyze
                     </Button>
                     
                     <Button 
                       onClick={handlePrimaryHumanize}
                       disabled={isHumanizeActionDisabled}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                      className="w-full h-9 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-sm"
                     >
                       {isLoading ? (
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <Repeat className="h-5 w-5 mr-2" />
+                        <Repeat className="h-4 w-4 mr-2" />
                       )}
-                      Humanize Text
+                      Humanize
                     </Button>
                   </div>
                 </CardContent>
@@ -583,48 +530,45 @@ export default function ProfessionalHumanizerPage() {
             </div>
           </div>
           
-          {/* Enhanced Output Section - Full Width */}
-          <div className="mt-12">
-            <Card className="border-0 shadow-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-700 p-6 border-b border-slate-200/50 dark:border-slate-600/50">
+          {/* Output Section - Compact Full Width */}
+          <div className="mt-6">
+            <Card className="border shadow-sm bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-slate-700/50 dark:to-slate-600/50 px-4 py-3 border-b border-slate-200/50 dark:border-slate-600/50">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                      <Sparkles className="h-6 w-6 text-green-600" />
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <Sparkles className="h-4 w-4 text-green-600" />
                     </div>
-                    <div>
-                      <span className="text-slate-800 dark:text-slate-100">Humanized Output</span>
-                      <p className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-1">Your enhanced, human-like content</p>
-                    </div>
+                    <span className="text-slate-800 dark:text-slate-100">Output</span>
                   </CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button 
                           variant="ghost" 
-                          size="icon" 
+                          size="sm" 
                           onClick={handleCopy} 
                           disabled={!outputText} 
-                          className="h-10 w-10 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors duration-200"
+                          className="h-7 w-7 p-0 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30"
                         >
-                          <Copy className="h-5 w-5" />
+                          <Copy className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Copy to clipboard</TooltipContent>
+                      <TooltipContent>Copy</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button 
                           variant="ghost" 
-                          size="icon" 
+                          size="sm" 
                           onClick={handleDownload} 
                           disabled={!outputText} 
-                          className="h-10 w-10 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors duration-200"
+                          className="h-7 w-7 p-0 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30"
                         >
-                          <Download className="h-5 w-5" />
+                          <Download className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Download as text file</TooltipContent>
+                      <TooltipContent>Download</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>
@@ -634,14 +578,14 @@ export default function ProfessionalHumanizerPage() {
                   <Textarea
                     value={outputText}
                     readOnly
-                    className="w-full min-h-[320px] text-base border-0 rounded-none focus-visible:ring-0 p-6 resize-none bg-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500 leading-relaxed"
+                    className="w-full h-64 text-sm border-0 rounded-none focus-visible:ring-0 p-4 resize-none bg-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     placeholder="Your humanized text will appear here... ✨"
                   />
                   {outputText && (
-                    <div className="absolute bottom-4 right-4 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200/50 dark:border-slate-600/50 shadow-sm">
+                    <div className="absolute bottom-3 right-3 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200/50 dark:border-slate-600/50">
                       <span className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        {outputWordCount} words
+                        <FileText className="h-3 w-3" />
+                        {outputWordCount}
                       </span>
                       <span className="text-slate-300 dark:text-slate-600">•</span>
                       <span>{outputCharCount} chars</span>
@@ -651,9 +595,9 @@ export default function ProfessionalHumanizerPage() {
                   {!outputText && !isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center text-slate-400 dark:text-slate-500">
-                        <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                        <p className="text-lg font-medium">Ready to humanize your text</p>
-                        <p className="text-sm">Paste your content and click "Humanize Text"</p>
+                        <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm font-medium">Ready to humanize</p>
+                        <p className="text-xs">Click "Humanize" to get started</p>
                       </div>
                     </div>
                   )}
