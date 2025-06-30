@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
     const offset = Number.parseInt(searchParams.get("offset") || "0")
     const userId = searchParams.get("userId")
 
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - returning mock data')
+      return NextResponse.json({ documents: [] })
+    }
+
     const documents = await getDocuments(limit, offset, userId ? Number.parseInt(userId) : undefined)
 
     return NextResponse.json({ documents })
@@ -39,6 +45,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Document ID is required" }, { status: 400 })
     }
 
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - cannot update document')
+      return NextResponse.json({ error: "Database not available" }, { status: 503 })
+    }
+
     const document = await updateDocument(id, data)
     return NextResponse.json({ document })
   } catch (error) {
@@ -60,6 +72,12 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: "Document ID is required" }, { status: 400 })
+    }
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - cannot delete document')
+      return NextResponse.json({ error: "Database not available" }, { status: 503 })
     }
 
     await deleteDocument(Number.parseInt(id))

@@ -2,13 +2,25 @@ import { neon } from "@neondatabase/serverless"
 import { drizzle } from "drizzle-orm/neon-http"
 
 // Initialize the SQL client with the database URL
-const sql = neon(process.env.DATABASE_URL!)
+// Handle cases where DATABASE_URL might not be available during build
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl && process.env.NODE_ENV === 'production') {
+  throw new Error('DATABASE_URL is required in production')
+}
 
-// Initialize the Drizzle ORM
-export const db = drizzle(sql)
+// Use a fallback for build/development when DATABASE_URL is not available
+const sql = databaseUrl ? neon(databaseUrl) : null
+
+// Initialize the Drizzle ORM only if we have a database connection
+export const db = sql ? drizzle(sql) : null
 
 // Helper function for raw SQL queries
 export async function executeQuery<T = any>(query: string, params: any[] = []): Promise<T> {
+  if (!sql) {
+    console.warn('Database not available - using mock data')
+    return [] as T
+  }
+  
   try {
     const result = await sql(query, params)
     return result as T
@@ -20,6 +32,11 @@ export async function executeQuery<T = any>(query: string, params: any[] = []): 
 
 // User-related queries
 export async function getUsers(limit = 100, offset = 0, search = "") {
+  if (!sql) {
+    console.warn('Database not available - returning empty users')
+    return []
+  }
+  
   const searchClause = search ? `WHERE email ILIKE $3 OR name ILIKE $3` : ""
   const query = `
     SELECT id, email, name, role, subscription_plan, created_at, updated_at
@@ -34,6 +51,11 @@ export async function getUsers(limit = 100, offset = 0, search = "") {
 }
 
 export async function getUserById(id: number) {
+  if (!sql) {
+    console.warn('Database not available - returning null user')
+    return null
+  }
+  
   const query = `
     SELECT id, email, name, role, subscription_plan, created_at, updated_at
     FROM users
@@ -62,6 +84,11 @@ export async function deleteUser(id: number) {
 
 // Document-related queries
 export async function getDocuments(limit = 100, offset = 0, userId?: number) {
+  if (!sql) {
+    console.warn('Database not available - returning empty documents')
+    return []
+  }
+  
   const userClause = userId ? `WHERE user_id = $3` : ""
   const query = `
     SELECT d.*, u.email as user_email, u.name as user_name
@@ -77,6 +104,11 @@ export async function getDocuments(limit = 100, offset = 0, userId?: number) {
 }
 
 export async function getDocumentById(id: number) {
+  if (!sql) {
+    console.warn('Database not available - returning null document')
+    return null
+  }
+  
   const query = `
     SELECT d.*, u.email as user_email, u.name as user_name
     FROM documents d
@@ -88,6 +120,11 @@ export async function getDocumentById(id: number) {
 }
 
 export async function updateDocument(id: number, data: any) {
+  if (!sql) {
+    console.warn('Database not available - cannot update document')
+    throw new Error('Database not available')
+  }
+  
   const { title, content, document_type, blob_url } = data
   const query = `
     UPDATE documents
@@ -100,6 +137,11 @@ export async function updateDocument(id: number, data: any) {
 }
 
 export async function deleteDocument(id: number) {
+  if (!sql) {
+    console.warn('Database not available - cannot delete document')
+    throw new Error('Database not available')
+  }
+  
   const query = `DELETE FROM documents WHERE id = $1`
   return executeQuery(query, [id])
 }
