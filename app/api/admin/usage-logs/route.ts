@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
     const offset = Number.parseInt(searchParams.get("offset") || "0")
     const userId = searchParams.get("userId")
 
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - returning mock data')
+      return NextResponse.json({ logs: [] })
+    }
+
     const logs = await getUsageLogs(limit, offset, userId ? Number.parseInt(userId) : undefined)
 
     return NextResponse.json({ logs })

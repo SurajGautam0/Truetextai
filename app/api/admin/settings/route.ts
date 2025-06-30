@@ -11,6 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - returning empty settings')
+      return NextResponse.json({ settings: [] })
+    }
+
     const settings = await getSettings()
     return NextResponse.json({ settings })
   } catch (error) {
@@ -31,6 +37,12 @@ export async function POST(request: NextRequest) {
 
     if (!key || value === undefined) {
       return NextResponse.json({ error: "Key and value are required" }, { status: 400 })
+    }
+
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - cannot create setting')
+      return NextResponse.json({ error: "Database not available" }, { status: 503 })
     }
 
     const setting = await createSetting(key, value, description || "")

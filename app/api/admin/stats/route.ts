@@ -11,6 +11,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
+    // Check if database is available
+    if (!process.env.DATABASE_URL) {
+      console.warn('Database not configured - returning mock stats')
+      return NextResponse.json({ 
+        stats: {
+          totalUsers: 0,
+          activeUsers: 0,
+          totalDocuments: 0,
+          totalUsage: 0
+        }
+      })
+    }
+
     const stats = await getDashboardStats()
     return NextResponse.json({ stats })
   } catch (error) {

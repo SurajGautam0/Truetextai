@@ -148,6 +148,11 @@ export async function deleteDocument(id: number) {
 
 // Usage logs queries
 export async function getUsageLogs(limit = 100, offset = 0, userId?: number) {
+  if (!sql) {
+    console.warn('Database not available - returning empty usage logs')
+    return []
+  }
+  
   const userClause = userId ? `WHERE user_id = $3` : ""
   const query = `
     SELECT l.*, u.email as user_email, u.name as user_name
@@ -164,11 +169,21 @@ export async function getUsageLogs(limit = 100, offset = 0, userId?: number) {
 
 // Settings queries
 export async function getSettings() {
+  if (!sql) {
+    console.warn('Database not available - returning empty settings')
+    return []
+  }
+  
   const query = `SELECT * FROM settings ORDER BY key`
   return executeQuery(query)
 }
 
 export async function updateSetting(key: string, value: string, description?: string) {
+  if (!sql) {
+    console.warn('Database not available - cannot update setting')
+    throw new Error('Database not available')
+  }
+  
   const query = `
     UPDATE settings
     SET value = $1, description = COALESCE($2, description), updated_at = CURRENT_TIMESTAMP
@@ -180,6 +195,11 @@ export async function updateSetting(key: string, value: string, description?: st
 }
 
 export async function createSetting(key: string, value: string, description: string) {
+  if (!sql) {
+    console.warn('Database not available - cannot create setting')
+    throw new Error('Database not available')
+  }
+  
   const query = `
     INSERT INTO settings (key, value, description)
     VALUES ($1, $2, $3)
@@ -203,56 +223,65 @@ export async function getDashboardStats() {
     documentsByType: [],
   }
 
-  // Get total users
-  const totalUsersQuery = `SELECT COUNT(*) as count FROM users`
-  const totalUsersResult = await executeQuery(totalUsersQuery)
-  stats.totalUsers = Number.parseInt(totalUsersResult[0].count)
+  if (!sql) {
+    console.warn('Database not available - returning empty stats')
+    return stats
+  }
 
-  // Get active users (users who have logged in within the last 30 days)
-  const activeUsersQuery = `
-    SELECT COUNT(DISTINCT user_id) as count 
-    FROM usage_logs 
-    WHERE created_at > NOW() - INTERVAL '30 days'
-  `
-  const activeUsersResult = await executeQuery(activeUsersQuery)
-  stats.activeUsers = Number.parseInt(activeUsersResult[0].count)
+  try {
+    // Get total users
+    const totalUsersQuery = `SELECT COUNT(*) as count FROM users`
+    const totalUsersResult = await executeQuery(totalUsersQuery)
+    stats.totalUsers = Number.parseInt(totalUsersResult[0].count)
 
-  // Get total documents
-  const totalDocumentsQuery = `SELECT COUNT(*) as count FROM documents`
-  const totalDocumentsResult = await executeQuery(totalDocumentsQuery)
-  stats.totalDocuments = Number.parseInt(totalDocumentsResult[0].count)
+    // Get active users (users who have logged in within the last 30 days)
+    const activeUsersQuery = `
+      SELECT COUNT(DISTINCT user_id) as count 
+      FROM usage_logs 
+      WHERE created_at > NOW() - INTERVAL '30 days'
+    `
+    const activeUsersResult = await executeQuery(activeUsersQuery)
+    stats.activeUsers = Number.parseInt(activeUsersResult[0].count)
 
-  // Get total usage
-  const totalUsageQuery = `SELECT SUM(tokens_used) as total FROM usage_logs`
-  const totalUsageResult = await executeQuery(totalUsageQuery)
-  stats.totalUsage = Number.parseInt(totalUsageResult[0].total || "0")
+    // Get total documents
+    const totalDocumentsQuery = `SELECT COUNT(*) as count FROM documents`
+    const totalDocumentsResult = await executeQuery(totalDocumentsQuery)
+    stats.totalDocuments = Number.parseInt(totalDocumentsResult[0].count)
 
-  // Get recent users
-  const recentUsersQuery = `
-    SELECT id, email, name, created_at 
-    FROM users 
-    ORDER BY created_at DESC 
-    LIMIT 5
-  `
-  stats.recentUsers = await executeQuery(recentUsersQuery)
+    // Get total usage
+    const totalUsageQuery = `SELECT SUM(tokens_used) as total FROM usage_logs`
+    const totalUsageResult = await executeQuery(totalUsageQuery)
+    stats.totalUsage = Number.parseInt(totalUsageResult[0].total || "0")
 
-  // Get usage by feature
-  const usageByFeatureQuery = `
-    SELECT feature, SUM(tokens_used) as total 
-    FROM usage_logs 
-    GROUP BY feature 
-    ORDER BY total DESC
-  `
-  stats.usageByFeature = await executeQuery(usageByFeatureQuery)
+    // Get recent users
+    const recentUsersQuery = `
+      SELECT id, email, name, created_at 
+      FROM users 
+      ORDER BY created_at DESC 
+      LIMIT 5
+    `
+    stats.recentUsers = await executeQuery(recentUsersQuery)
 
-  // Get documents by type
-  const documentsByTypeQuery = `
-    SELECT document_type, COUNT(*) as count 
-    FROM documents 
-    GROUP BY document_type 
-    ORDER BY count DESC
-  `
-  stats.documentsByType = await executeQuery(documentsByTypeQuery)
+    // Get usage by feature
+    const usageByFeatureQuery = `
+      SELECT feature, SUM(tokens_used) as total 
+      FROM usage_logs 
+      GROUP BY feature 
+      ORDER BY total DESC
+    `
+    stats.usageByFeature = await executeQuery(usageByFeatureQuery)
+
+    // Get documents by type
+    const documentsByTypeQuery = `
+      SELECT document_type, COUNT(*) as count 
+      FROM documents 
+      GROUP BY document_type 
+      ORDER BY count DESC
+    `
+    stats.documentsByType = await executeQuery(documentsByTypeQuery)
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error)
+  }
 
   return stats
 }
