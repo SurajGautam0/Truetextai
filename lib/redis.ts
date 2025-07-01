@@ -13,6 +13,9 @@ export interface StoredUser {
   trialStartDate?: string
   trialEndDate?: string
   hasUsedTrial?: boolean
+  isBanned?: boolean
+  wordLimit?: number
+  isPremium?: boolean
 }
 
 export interface PublicUser {
@@ -25,6 +28,9 @@ export interface PublicUser {
   trialStartDate?: string
   trialEndDate?: string
   hasUsedTrial?: boolean
+  isBanned?: boolean
+  wordLimit?: number
+  isPremium?: boolean
 }
 
 // In-memory storage for development/preview environments
@@ -75,6 +81,9 @@ function addDemoUser() {
     role: "user",
     plan: "free",
     createdAt: new Date().toISOString(),
+    isBanned: false,
+    wordLimit: 300,
+    isPremium: false,
   }
 
   const adminUser: StoredUser = {
@@ -85,6 +94,9 @@ function addDemoUser() {
     role: "admin",
     plan: "enterprise",
     createdAt: new Date().toISOString(),
+    isBanned: false,
+    wordLimit: 10000,
+    isPremium: true,
   }
 
   inMemoryUsers[demoUser.id] = demoUser
@@ -125,6 +137,9 @@ export async function createUser(
       role,
       plan,
       createdAt,
+      isBanned: false,
+      wordLimit: 300,
+      isPremium: plan !== "free",
     }
 
     if (isKVAvailable()) {
