@@ -36,6 +36,8 @@ export default function AdminSettings() {
   const [smtpPassword, setSmtpPassword] = useState("••••••••••••")
   const [emailFrom, setEmailFrom] = useState("noreply@truetextai.com")
 
+  const [globalWordLimit, setGlobalWordLimit] = useState(1000)
+
   const handleSaveGeneral = () => {
     // In a real app, this would be an API call
     // await fetch('/api/admin/settings/general', {
@@ -249,6 +251,18 @@ export default function AdminSettings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-2">Global Word Limit</h3>
+        <p className="text-sm text-muted-foreground mb-4">Set the maximum number of words allowed per user (default applies if user-specific limit is not set).</p>
+        <Input
+          type="number"
+          min={0}
+          value={globalWordLimit}
+          onChange={e => setGlobalWordLimit(parseInt(e.target.value))}
+          className="w-40"
+        />
+      </div>
     </div>
   )
 }

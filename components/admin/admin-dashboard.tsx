@@ -97,9 +97,13 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="text-2xl font-bold">{stats?.totalUsers}</div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  {loading ? <Skeleton className="h-4 w-28 mt-1" /> : <>+{stats?.recentSignups} from last month</>}
-                </p>
+                {loading ? (
+                  <div className="text-xs text-muted-foreground">
+                    <Skeleton className="h-4 w-28 mt-1" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">+{stats?.recentSignups} from last month</p>
+                )}
               </CardContent>
             </Card>
 
@@ -114,9 +118,13 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="text-2xl font-bold">{stats?.documentsProcessed}</div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  {loading ? <Skeleton className="h-4 w-28 mt-1" /> : <>+143 from last week</>}
-                </p>
+                {loading ? (
+                  <div className="text-xs text-muted-foreground">
+                    <Skeleton className="h-4 w-28 mt-1" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">+143 from last week</p>
+                )}
               </CardContent>
             </Card>
 

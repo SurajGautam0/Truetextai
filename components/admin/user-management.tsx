@@ -27,57 +27,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { MoreHorizontal, Search, UserPlus, RefreshCw } from "lucide-react"
-
-// Mock user data - in a real app, this would come from your API
-const mockUsers = [
-  {
-    id: "user_1",
-    name: "John Doe",
-    email: "john@example.com",
-    role: "admin",
-    plan: "enterprise",
-    createdAt: "2023-01-15T10:30:00Z",
-    lastActive: "2023-05-08T14:22:00Z",
-  },
-  {
-    id: "user_2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "user",
-    plan: "pro",
-    createdAt: "2023-02-20T08:15:00Z",
-    lastActive: "2023-05-07T11:45:00Z",
-  },
-  {
-    id: "user_3",
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    role: "user",
-    plan: "free",
-    createdAt: "2023-03-10T15:45:00Z",
-    lastActive: "2023-05-05T09:30:00Z",
-  },
-  {
-    id: "user_4",
-    name: "Alice Williams",
-    email: "alice@example.com",
-    role: "user",
-    plan: "pro",
-    createdAt: "2023-04-05T12:00:00Z",
-    lastActive: "2023-05-08T10:15:00Z",
-  },
-  {
-    id: "user_5",
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    role: "user",
-    plan: "free",
-    createdAt: "2023-04-22T09:20:00Z",
-    lastActive: "2023-05-06T16:40:00Z",
-  },
-]
-
-type User = (typeof mockUsers)[0]
+import { getAllUsers, updateUserRole, updateUserPlan, getUserById, db } from "@/lib/firebase"
+import { doc, updateDoc } from "firebase/firestore"
 
 export default function UserManagement() {
   const { toast } = useToast()
@@ -97,25 +48,18 @@ export default function UserManagement() {
   })
 
   useEffect(() => {
-    // Simulate API call
     const fetchUsers = async () => {
+      setLoading(true)
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/admin/users')
-        // const data = await response.json()
-        // setUsers(data)
-
-        // Using mock data for now
-        setTimeout(() => {
-          setUsers(mockUsers)
-          setLoading(false)
-        }, 1000)
-      } catch (error) {
+        const realUsers = await getAllUsers()
+        setUsers(realUsers)
+      } catch (error: any) {
         toast({
           title: "Error fetching users",
-          description: "Could not load user data.",
+          description: error.message || "Could not load user data.",
           variant: "destructive",
         })
+      } finally {
         setLoading(false)
       }
     }
@@ -145,6 +89,8 @@ export default function UserManagement() {
       id: newId,
       createdAt,
       lastActive: createdAt,
+      banned: false,
+      wordLimit: 0,
     } as User
 
     setUsers([...users, addedUser])
@@ -162,26 +108,21 @@ export default function UserManagement() {
     })
   }
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!currentUser) return
-
-    // In a real app, this would be an API call
-    // const response = await fetch(`/api/admin/users/${currentUser.id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(currentUser),
-    // })
-
-    // Simulate updating a user
-    const updatedUsers = users.map((user) => (user.id === currentUser.id ? currentUser : user))
-
-    setUsers(updatedUsers)
-    setShowEditUserDialog(false)
-    setCurrentUser(null)
-
-    toast({
-      title: "User updated",
-      description: `${currentUser.name}'s information has been updated.`,
-    })
+    try {
+      await updateDoc(doc(db, 'users', currentUser.id), { ...currentUser })
+      const updatedUsers = users.map((user) => (user.id === currentUser.id ? currentUser : user))
+      setUsers(updatedUsers)
+      setShowEditUserDialog(false)
+      setCurrentUser(null)
+      toast({
+        title: "User updated",
+        description: `${currentUser.name}'s information has been updated.`,
+      })
+    } catch (error: any) {
+      toast({ title: "Error updating user", description: error.message, variant: "destructive" })
+    }
   }
 
   const handleDeleteUser = (userId: string) => {
@@ -202,14 +143,24 @@ export default function UserManagement() {
     })
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+  const formatDate = (dateValue: any) => {
+    if (!dateValue) return "N/A";
+    let date: Date;
+    // Firestore Timestamp object
+    if (typeof dateValue.toDate === "function") {
+      date = dateValue.toDate();
+    } else if (dateValue instanceof Date) {
+      date = dateValue;
+    } else {
+      date = new Date(dateValue);
+    }
+    if (isNaN(date.getTime())) return "N/A";
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    }).format(date)
-  }
+    }).format(date);
+  };
 
   return (
     <div className="space-y-6">
@@ -352,7 +303,12 @@ export default function UserManagement() {
             ) : filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {user.name}
+                    {user.banned && (
+                      <Badge variant="destructive" className="ml-2">Banned</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === "admin" ? "default" : "outline"}>{user.role}</Badge>
@@ -399,7 +355,20 @@ export default function UserManagement() {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user.id)}>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                await updateDoc(doc(db, 'users', user.id), { banned: !user.banned })
+                                setUsers(users.map(u => u.id === user.id ? { ...u, banned: !u.banned } : u))
+                                toast({ title: user.banned ? "User unbanned" : "User banned", description: `${user.name} has been ${user.banned ? "unbanned" : "banned"}.` })
+                              } catch (error: any) {
+                                toast({ title: "Error", description: error.message, variant: "destructive" })
+                              }
+                            }}
+                          >
+                            {user.banned ? "Unban" : "Ban"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600" disabled={user.banned} onClick={() => handleDeleteUser(user.id)}>
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -416,7 +385,7 @@ export default function UserManagement() {
                               <Label htmlFor="edit-name">Name</Label>
                               <Input
                                 id="edit-name"
-                                value={currentUser.name}
+                                value={currentUser.name ?? ""}
                                 onChange={(e) => setCurrentUser({ ...currentUser, name: e.target.value })}
                               />
                             </div>
@@ -425,7 +394,7 @@ export default function UserManagement() {
                               <Input
                                 id="edit-email"
                                 type="email"
-                                value={currentUser.email}
+                                value={currentUser.email ?? ""}
                                 onChange={(e) => setCurrentUser({ ...currentUser, email: e.target.value })}
                               />
                             </div>
@@ -465,6 +434,16 @@ export default function UserManagement() {
                                   </SelectContent>
                                 </Select>
                               </div>
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-wordlimit">Word Limit</Label>
+                              <Input
+                                id="edit-wordlimit"
+                                type="number"
+                                min={0}
+                                value={currentUser.wordLimit ?? 0}
+                                onChange={e => setCurrentUser({ ...currentUser, wordLimit: parseInt(e.target.value) || 0 })}
+                              />
                             </div>
                           </div>
                         )}

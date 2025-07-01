@@ -1,4 +1,6 @@
 import { kv } from "@vercel/kv"
+import { db } from "./firebase"
+import { doc, getDoc, setDoc } from "firebase/firestore"
 
 // Define rate limits for different features and user tiers
 const RATE_LIMITS = {
@@ -25,7 +27,6 @@ export async function checkRateLimit(
   feature: keyof typeof RATE_LIMITS,
   tier: keyof (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS] = "free",
 ) {
-  // Get the rate limit configuration for this feature and tier
   const { limit, window } = RATE_LIMITS[feature][tier]
 
   // If the limit is infinite, always allow
@@ -39,7 +40,37 @@ export async function checkRateLimit(
   }
 
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-    throw new Error("Missing required environment variables KV_REST_API_URL and KV_REST_API_TOKEN")
+    // Firestore fallback
+    const now = Math.floor(Date.now() / 1000)
+    const key = `${userId}_${feature}_${tier}`
+    const ref = doc(db, "rate_limits", key)
+    const docSnap = await getDoc(ref)
+    let data = docSnap.exists() ? docSnap.data() as { count: number; reset: number } : null
+    if (!data || data.reset <= now) {
+      const reset = now + window
+      await setDoc(ref, { count: 1, reset })
+      return {
+        allowed: true,
+        remaining: limit - 1,
+        limit,
+        reset,
+      }
+    }
+    if (data.count >= limit) {
+      return {
+        allowed: false,
+        remaining: 0,
+        limit,
+        reset: data.reset,
+      }
+    }
+    await setDoc(ref, { count: data.count + 1, reset: data.reset })
+    return {
+      allowed: true,
+      remaining: limit - (data.count + 1),
+      limit,
+      reset: data.reset,
+    }
   }
 
   const now = Math.floor(Date.now() / 1000)
@@ -87,7 +118,6 @@ export async function getRemainingUsage(
   feature: keyof typeof RATE_LIMITS,
   tier: keyof (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS] = "free",
 ) {
-  // Get the rate limit configuration for this feature and tier
   const { limit, window } = RATE_LIMITS[feature][tier]
 
   // If the limit is infinite, always allow
@@ -100,7 +130,24 @@ export async function getRemainingUsage(
   }
 
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-    throw new Error("Missing required environment variables KV_REST_API_URL and KV_REST_API_TOKEN")
+    // Firestore fallback
+    const now = Math.floor(Date.now() / 1000)
+    const key = `${userId}_${feature}_${tier}`
+    const ref = doc(db, "rate_limits", key)
+    const docSnap = await getDoc(ref)
+    let data = docSnap.exists() ? docSnap.data() as { count: number; reset: number } : null
+    if (!data || data.reset <= now) {
+      return {
+        remaining: limit,
+        limit,
+        reset: now + window,
+      }
+    }
+    return {
+      remaining: Math.max(0, limit - data.count),
+      limit,
+      reset: data.reset,
+    }
   }
 
   const now = Math.floor(Date.now() / 1000)
