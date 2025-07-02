@@ -394,9 +394,9 @@ export default function ProfessionalHumanizerPage() {
                 </CardFooter>
               </Card>
               
-              {/* AI Detector & Actions */}
+              {/* AI Detector */}
               <Card className="shadow-sm bg-white dark:bg-slate-800/50">
-                 <CardContent className="p-3 flex flex-col gap-3">
+                 <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                            <CircularProgress percentage={aiProbability} statusText={currentAiStatusText} />
@@ -410,6 +410,12 @@ export default function ProfessionalHumanizerPage() {
                           <span className="ml-2 hidden sm:inline">Analyze</span>
                         </Button>
                     </div>
+                 </CardContent>
+              </Card>
+
+              {/* Actions */}
+              <Card className="shadow-sm bg-white dark:bg-slate-800/50">
+                <CardContent className="p-3">
                     <Button 
                       size="lg"
                       onClick={handlePrimaryHumanize}
@@ -423,7 +429,7 @@ export default function ProfessionalHumanizerPage() {
                       )}
                       Humanize Text
                     </Button>
-                 </CardContent>
+                </CardContent>
               </Card>
             </div>
           </div>
