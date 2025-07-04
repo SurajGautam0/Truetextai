@@ -10,60 +10,56 @@ import Link from "next/link"
 import { Progress } from "./ui/progress"
 import { Badge } from "./ui/badge"
 import { useAuth } from "@/contexts/auth-context"
-import { getRemainingUsage } from "@/lib/rate-limit"
+import { useToast } from "@/hooks/use-toast"
 // Import the TrialPromotion and TrialStatus components
 import { TrialPromotion } from "@/components/trial-promotion"
 import { TrialStatus } from "@/components/trial-status"
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const [usageStats, setUsageStats] = useState({
-    paraphraser: { used: 0, total: 6, remaining: 6, reset: 0 },
-    aiChecker: { used: 0, total: Number.POSITIVE_INFINITY, remaining: Number.POSITIVE_INFINITY, reset: 0 },
-    assignmentWriter: { used: 0, total: 3, remaining: 3, reset: 0 },
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    wordsUsed: 0,
+    paraphrasedTexts: 0,
+    aiChecks: 0,
+    assignments: 0,
   })
 
   useEffect(() => {
-    // Fetch usage stats when component mounts
-    const fetchUsageStats = async () => {
-      if (user) {
-        try {
-          const [paraphraserUsage, aiCheckerUsage, assignmentWriterUsage] = await Promise.all([
-            getRemainingUsage(user.id, "paraphraser", "free"),
-            getRemainingUsage(user.id, "aiChecker", "free"),
-            getRemainingUsage(user.id, "assignmentWriter", "free"),
-          ])
-
-          setUsageStats({
-            paraphraser: {
-              used: paraphraserUsage.limit - paraphraserUsage.remaining,
-              total: paraphraserUsage.limit,
-              remaining: paraphraserUsage.remaining,
-              reset: paraphraserUsage.reset,
-            },
-            aiChecker: {
-              used: 0, // AI Checker is unlimited
-              total: Number.POSITIVE_INFINITY,
-              remaining: Number.POSITIVE_INFINITY,
-              reset: 0,
-            },
-            assignmentWriter: {
-              used: assignmentWriterUsage.limit - assignmentWriterUsage.remaining,
-              total: assignmentWriterUsage.limit,
-              remaining: assignmentWriterUsage.remaining,
-              reset: assignmentWriterUsage.reset,
-            },
-          })
-        } catch (error) {
-          console.error("Error fetching usage stats:", error)
+    async function fetchUserStats() {
+      if (!user) return
+      setLoading(true)
+      try {
+        // Fetch usage logs for this user
+        const res = await fetch(`/api/usage-logs?limit=1000&userId=${user.id}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to fetch usage logs")
+        // Aggregate stats
+        let wordsUsed = 0
+        let paraphrasedTexts = 0
+        let aiChecks = 0
+        let assignments = 0
+        for (const log of data.logs) {
+          if (log.feature === "paraphraser") {
+            paraphrasedTexts++
+            wordsUsed += log.tokens_used || 0
+          } else if (log.feature === "aiChecker") {
+            aiChecks++
+            wordsUsed += log.tokens_used || 0
+          } else if (log.feature === "assignmentWriter") {
+            assignments++
+            wordsUsed += log.tokens_used || 0
+          }
         }
+        setStats({ wordsUsed, paraphrasedTexts, aiChecks, assignments })
+      } catch (e: any) {
+        toast({ title: "Error", description: e.message, variant: "destructive" })
+      } finally {
+        setLoading(false)
       }
     }
-
-    fetchUsageStats()
-    // Set up a refresh interval
-    const interval = setInterval(fetchUsageStats, 60000) // Refresh every minute
-    return () => clearInterval(interval)
+    fetchUserStats()
   }, [user])
 
   return (
@@ -78,13 +74,13 @@ export default function Dashboard() {
                 <BarChart2 className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12,234</div>
+                <div className="text-2xl font-bold">{loading ? "..." : stats.wordsUsed.toLocaleString()}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <TrendingUp className="mr-1 h-3 w-3 text-success" />
-                  <span className="text-success font-medium">+20%</span>
-                  <span className="ml-1">from last month</span>
+                  <span className="text-success font-medium"> </span>
+                  <span className="ml-1"> </span>
                 </div>
-                <Progress value={61} className="h-1 mt-3" />
+                <Progress value={stats.wordsUsed ? Math.min(100, (stats.wordsUsed / 20000) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
             </Card>
             <Card className="card-hover border-primary/10">
@@ -93,13 +89,13 @@ export default function Dashboard() {
                 <Sparkles className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">45</div>
+                <div className="text-2xl font-bold">{loading ? "..." : stats.paraphrasedTexts}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <TrendingUp className="mr-1 h-3 w-3 text-success" />
-                  <span className="text-success font-medium">+12%</span>
-                  <span className="ml-1">from last month</span>
+                  <span className="text-success font-medium"> </span>
+                  <span className="ml-1"> </span>
                 </div>
-                <Progress value={45} className="h-1 mt-3" />
+                <Progress value={stats.paraphrasedTexts ? Math.min(100, (stats.paraphrasedTexts / 100) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
             </Card>
             <Card className="card-hover border-primary/10">
@@ -108,13 +104,13 @@ export default function Dashboard() {
                 <Search className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">23</div>
+                <div className="text-2xl font-bold">{loading ? "..." : stats.aiChecks}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <TrendingUp className="mr-1 h-3 w-3 text-success" />
-                  <span className="text-success font-medium">+5%</span>
-                  <span className="ml-1">from last month</span>
+                  <span className="text-success font-medium"> </span>
+                  <span className="ml-1"> </span>
                 </div>
-                <Progress value={23} className="h-1 mt-3" />
+                <Progress value={stats.aiChecks ? Math.min(100, (stats.aiChecks / 100) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
             </Card>
             <Card className="card-hover border-primary/10">
@@ -123,13 +119,13 @@ export default function Dashboard() {
                 <GraduationCap className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">7</div>
+                <div className="text-2xl font-bold">{loading ? "..." : stats.assignments}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
                   <Badge variant="outline" className="text-xs font-normal">
                     New feature
                   </Badge>
                 </div>
-                <Progress value={35} className="h-1 mt-3" />
+                <Progress value={stats.assignments ? Math.min(100, (stats.assignments / 100) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
             </Card>
             <TrialStatus />

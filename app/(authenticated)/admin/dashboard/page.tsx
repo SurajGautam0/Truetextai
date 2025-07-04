@@ -2,12 +2,12 @@
 
 import React from 'react';
 import AdminGuard from '@/components/admin-guard';
-import AdminDashboard from '@/components/admin/dashboard';
+import NewAdminDashboard from '@/components/admin/new-admin-dashboard';
 
 const AdminDashboardPage = () => {
   return (
     <AdminGuard>
-      <AdminDashboard />
+      <NewAdminDashboard />
     </AdminGuard>
   );
 };

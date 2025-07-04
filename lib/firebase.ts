@@ -20,7 +20,8 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  deleteDoc
 } from 'firebase/firestore';
 
 // Your Firebase configuration
@@ -313,5 +314,13 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     } else {
       throw new Error('Failed to get user data.');
     }
+  }
+};
+
+export const deleteUserById = async (userId: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, 'users', userId));
+  } catch (error: any) {
+    throw new Error(error.message);
   }
 }; 
