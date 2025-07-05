@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ThemeCustomizer } from "./theme-customizer"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/hooks/use-toast"
 
 interface HeaderProps {
   title: string
@@ -23,9 +24,47 @@ interface HeaderProps {
 export default function Header({ title }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [wordsUsed, setWordsUsed] = useState(12345)
-  const [totalWords, setTotalWords] = useState(20000)
+  const [wordsUsed, setWordsUsed] = useState<number | null>(null)
+  const [totalWords, setTotalWords] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
   const { user, logout } = useAuth()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    async function fetchUserStats() {
+      if (!user) return
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/usage-logs?limit=1000&userId=${user.id}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to fetch usage logs")
+        let wordsUsed = 0
+        let dailyWordsUsed = 0
+        const today = new Date()
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        for (const log of data.logs) {
+          const logDate = new Date(log.created_at)
+          const tokensUsed = log.tokens_used || 0
+          wordsUsed += tokensUsed
+          if (logDate >= todayStart) {
+            dailyWordsUsed += tokensUsed
+          }
+        }
+        if (user.plan === "free") {
+          setWordsUsed(dailyWordsUsed)
+          setTotalWords(1000)
+        } else {
+          setWordsUsed(wordsUsed)
+          setTotalWords(50000)
+        }
+      } catch (e: any) {
+        toast({ title: "Error", description: e.message, variant: "destructive" })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUserStats()
+  }, [user])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,9 +92,9 @@ export default function Header({ title }: HeaderProps) {
         {/* Right - Desktop Content */}
         <div className="hidden md:flex items-center gap-4">
           <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-            <span className="font-medium text-foreground">{wordsUsed.toLocaleString()}</span>
+            <span className="font-medium text-foreground">{loading ? "..." : wordsUsed?.toLocaleString()}</span>
             <span className="mx-1">/</span>
-            <span>{totalWords.toLocaleString()}</span>
+            <span>{loading ? "..." : totalWords?.toLocaleString()}</span>
             <span className="ml-1">words</span>
           </div>
 
@@ -120,9 +159,9 @@ export default function Header({ title }: HeaderProps) {
       {mobileMenuOpen && (
         <div className="md:hidden px-4 pb-4 pt-2 space-y-2 bg-background border-t border-border">
           <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full w-fit">
-            <span className="font-medium text-foreground">{wordsUsed.toLocaleString()}</span>
+            <span className="font-medium text-foreground">{loading ? "..." : wordsUsed?.toLocaleString()}</span>
             <span className="mx-1">/</span>
-            <span>{totalWords.toLocaleString()}</span>
+            <span>{loading ? "..." : totalWords?.toLocaleString()}</span>
             <span className="ml-1">words</span>
           </div>
           <Button variant="outline" className="w-full flex items-center gap-2">

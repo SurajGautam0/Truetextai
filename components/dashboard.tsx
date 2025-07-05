@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast"
 // Import the TrialPromotion and TrialStatus components
 import { TrialPromotion } from "@/components/trial-promotion"
 import { TrialStatus } from "@/components/trial-status"
+import { db } from "@/lib/firebase"
+import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore"
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -21,66 +23,84 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     wordsUsed: 0,
+    dailyWordsUsed: 0,
     paraphrasedTexts: 0,
     aiChecks: 0,
     assignments: 0,
   })
 
   useEffect(() => {
-    async function fetchUserStats() {
-      if (!user) return
-      setLoading(true)
-      try {
-        // Fetch usage logs for this user
-        const res = await fetch(`/api/usage-logs?limit=1000&userId=${user.id}`)
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || "Failed to fetch usage logs")
-        // Aggregate stats
-        let wordsUsed = 0
-        let paraphrasedTexts = 0
-        let aiChecks = 0
-        let assignments = 0
-        for (const log of data.logs) {
-          if (log.feature === "paraphraser") {
-            paraphrasedTexts++
-            wordsUsed += log.tokens_used || 0
-          } else if (log.feature === "aiChecker") {
-            aiChecks++
-            wordsUsed += log.tokens_used || 0
-          } else if (log.feature === "assignmentWriter") {
-            assignments++
-            wordsUsed += log.tokens_used || 0
-          }
+    if (!user) return;
+    setLoading(true);
+    // Real-time Firestore listener
+    const usageLogsQuery = query(collection(db, "usage_logs"), where("user_id", "==", user.id));
+    const unsubscribe = onSnapshot(usageLogsQuery, (querySnapshot) => {
+      let wordsUsed = 0;
+      let dailyWordsUsed = 0;
+      let paraphrasedTexts = 0;
+      let aiChecks = 0;
+      let assignments = 0;
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      querySnapshot.forEach((doc) => {
+        const log = doc.data();
+        const logDate = new Date(log.created_at);
+        const tokensUsed = log.tokens_used || 0;
+        wordsUsed += tokensUsed;
+        if (logDate >= todayStart) {
+          dailyWordsUsed += tokensUsed;
         }
-        setStats({ wordsUsed, paraphrasedTexts, aiChecks, assignments })
-      } catch (e: any) {
-        toast({ title: "Error", description: e.message, variant: "destructive" })
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchUserStats()
-  }, [user])
+        if (log.feature === "paraphraser") paraphrasedTexts++;
+        else if (log.feature === "aiChecker") aiChecks++;
+        else if (log.feature === "assignmentWriter") assignments++;
+      });
+      setStats({ wordsUsed, dailyWordsUsed, paraphrasedTexts, aiChecks, assignments });
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   return (
     <>
       <Header title="Dashboard" />
       <main className="flex-1 overflow-auto p-6">
         <div className="grid gap-6 animate-fade-in">
+          {/* Daily Word Limit Card for Free Users */}
+          {/* Removed Daily Word Limit card for free users */}
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="card-hover border-primary/10">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Words Used</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {user?.plan === "free" ? "Words Used Today" : "Total Words Used"}
+                </CardTitle>
                 <BarChart2 className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{loading ? "..." : stats.wordsUsed.toLocaleString()}</div>
-                <div className="mt-2 flex items-center text-xs text-muted-foreground">
-                  <TrendingUp className="mr-1 h-3 w-3 text-success" />
-                  <span className="text-success font-medium"> </span>
-                  <span className="ml-1"> </span>
+                <div className="text-2xl font-bold">
+                  {loading ? "..." : (user?.plan === "free" ? stats.dailyWordsUsed : stats.wordsUsed).toLocaleString()}
                 </div>
-                <Progress value={stats.wordsUsed ? Math.min(100, (stats.wordsUsed / 20000) * 100) : 0} className="h-1 mt-3" />
+                <div className="mt-2 flex items-center text-xs text-muted-foreground">
+                  {user?.plan === "free" ? (
+                    <>
+                      <span className="text-muted-foreground">
+                        {1000 - stats.dailyWordsUsed} words remaining today
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-1 h-3 w-3 text-success" />
+                      <span className="text-success font-medium">Unlimited</span>
+                    </>
+                  )}
+                </div>
+                <Progress 
+                  value={user?.plan === "free" 
+                    ? Math.min(100, (stats.dailyWordsUsed / 1000) * 100)
+                    : Math.min(100, (stats.wordsUsed / 50000) * 100)
+                  } 
+                  className="h-1 mt-3" 
+                />
               </CardContent>
             </Card>
             <Card className="card-hover border-primary/10">
@@ -91,11 +111,18 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{loading ? "..." : stats.paraphrasedTexts}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
-                  <TrendingUp className="mr-1 h-3 w-3 text-success" />
-                  <span className="text-success font-medium"> </span>
-                  <span className="ml-1"> </span>
+                  {user?.plan === "free" ? (
+                    <Badge variant="secondary" className="text-xs">
+                      Free: 300 words/request
+                    </Badge>
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-1 h-3 w-3 text-success" />
+                      <span className="text-success font-medium">Unlimited</span>
+                    </>
+                  )}
                 </div>
-                <Progress value={stats.paraphrasedTexts ? Math.min(100, (stats.paraphrasedTexts / 100) * 100) : 0} className="h-1 mt-3" />
+                <Progress value={stats.paraphrasedTexts ? Math.min(100, (stats.paraphrasedTexts / 50) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
             </Card>
             <Card className="card-hover border-primary/10">
@@ -106,9 +133,16 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{loading ? "..." : stats.aiChecks}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
-                  <TrendingUp className="mr-1 h-3 w-3 text-success" />
-                  <span className="text-success font-medium"> </span>
-                  <span className="ml-1"> </span>
+                  {user?.plan === "free" ? (
+                    <Badge variant="secondary" className="text-xs">
+                      Free: 50+ word required
+                    </Badge>
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-1 h-3 w-3 text-success" />
+                      <span className="text-success font-medium">Unlimited</span>
+                    </>
+                  )}
                 </div>
                 <Progress value={stats.aiChecks ? Math.min(100, (stats.aiChecks / 100) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
@@ -121,11 +155,17 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{loading ? "..." : stats.assignments}</div>
                 <div className="mt-2 flex items-center text-xs text-muted-foreground">
-                  <Badge variant="outline" className="text-xs font-normal">
-                    New feature
-                  </Badge>
+                  {user?.plan === "free" ? (
+                    <Badge variant="outline" className="text-xs font-normal border-orange-300 text-orange-600">
+                      Premium feature
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      New feature
+                    </Badge>
+                  )}
                 </div>
-                <Progress value={stats.assignments ? Math.min(100, (stats.assignments / 100) * 100) : 0} className="h-1 mt-3" />
+                <Progress value={stats.assignments ? Math.min(100, (stats.assignments / 10) * 100) : 0} className="h-1 mt-3" />
               </CardContent>
             </Card>
             <TrialStatus />

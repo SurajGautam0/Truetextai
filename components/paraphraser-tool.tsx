@@ -30,6 +30,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import Confetti from "react-confetti";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
+import { db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 type ModelType = "python-journalist-api" | "python-huggingface" | "truetext-rewriter" | "truetext-render-api";
 type StyleType = "general" | "academic" | "marketing" | "story" | "blog" | "paraphrase";
@@ -217,19 +219,55 @@ export default function ProfessionalHumanizerPage() {
       return;
     }
     
+    const wordCount = textToProcess.trim().split(/\s+/).filter(Boolean).length;
+    
     if (user?.plan === "free") {
-      const wordCount = textToProcess.trim().split(/\s+/).filter(Boolean).length;
+      // Check per-request word limit
       if (wordCount > 300) {
         toast({ 
-          title: "Word Limit Exceeded", 
-          description: "Free users can paraphrase up to 300 words at a time. Please upgrade for more.", 
+          title: "Per-Request Limit Exceeded", 
+          description: "Free users can paraphrase up to 300 words per request. Please reduce your text or upgrade for unlimited usage.", 
           variant: "destructive" 
         });
         return;
       }
+      
+      // Check daily word limit - need to fetch current usage
+      try {
+        const res = await fetch(`/api/usage-logs?limit=1000&userId=${user.id}`);
+        const data = await res.json();
+        
+        if (res.ok) {
+          // Calculate today's usage
+          const today = new Date();
+          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          let dailyWordsUsed = 0;
+          
+          for (const log of data.logs) {
+            const logDate = new Date(log.created_at);
+            if (logDate >= todayStart) {
+              dailyWordsUsed += log.tokens_used || 0;
+            }
+          }
+          
+          // Check if this request would exceed daily limit
+          if (dailyWordsUsed + wordCount > 1000) {
+            const remaining = Math.max(0, 1000 - dailyWordsUsed);
+            toast({ 
+              title: "Daily Word Limit Exceeded", 
+              description: `You have ${remaining} words remaining today (${dailyWordsUsed}/1000 used). Your current request requires ${wordCount} words. Please reduce your text or upgrade for unlimited daily usage.`, 
+              variant: "destructive" 
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking daily usage:", error);
+        // Continue with request if we can't check usage
+      }
     }
     
-    if (textToProcess.trim().split(/\s+/).filter(Boolean).length < 5) {
+    if (wordCount < 5) {
       toast({ 
         title: "Input Too Short", 
         description: "Please provide at least 5 words for better results.", 
@@ -257,6 +295,19 @@ export default function ProfessionalHumanizerPage() {
           description: `Output updated. AI detection score: ${resultPayload.aiScore}%`, 
           variant: "default" 
         });
+        // Write usage log to Firestore
+        if (user) {
+          try {
+            await addDoc(collection(db, "usage_logs"), {
+              user_id: user.id,
+              created_at: new Date().toISOString(),
+              tokens_used: wordCount,
+              feature: "paraphraser"
+            });
+          } catch (e) {
+            console.error("Failed to log usage to Firestore", e);
+          }
+        }
       } else if (!resultPayload.error) {
         throw new Error("Processing failed to produce output.");
       }
@@ -304,31 +355,61 @@ export default function ProfessionalHumanizerPage() {
     setAiProbability(0); 
 
     try {
+      // Enhanced AI detection with multiple fallback options
       const response = await fetch('/api/check-ai', { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToCheck }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+          text: textToCheck.trim(),
+          source: 'paraphraser-tool',
+          timestamp: new Date().toISOString()
+        }),
       });
+
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || `AI detection failed: ${response.statusText}`);
+        const errorMessage = result.error || result.detail || `AI detection service error (${response.status})`;
+        throw new Error(errorMessage);
       }
       
-      if (typeof result.ai_probability === 'number') {
-        setAiProbability(result.ai_probability); 
+      if (typeof result.ai_probability === 'number' && result.ai_probability >= 0 && result.ai_probability <= 100) {
+        const probability = Math.round(result.ai_probability);
+        setAiProbability(probability);
+        
+        const statusMessage = probability < 30 
+          ? `Excellent! This text appears naturally human-written (${probability}% AI probability).`
+          : probability < 70 
+            ? `Caution: This text may be AI-generated (${probability}% AI probability).`
+            : `Warning: This text is likely AI-generated (${probability}% AI probability).`;
+            
         toast({ 
-          title: "AI Detection Complete", 
-          description: `This text has a ${result.ai_probability}% probability of being AI-generated.` 
+          title: "AI Analysis Complete", 
+          description: statusMessage,
+          variant: probability < 30 ? "default" : "destructive"
         });
       } else {
-        throw new Error("Invalid response from AI detection service.");
+        throw new Error("Invalid AI probability score received from detection service.");
       }
     } catch (error: any) {
       console.error("AI detection error:", error);
+      
+      // Provide more helpful error messages
+      let errorMessage = "Unable to analyze text for AI content.";
+      if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+        errorMessage = "Network connection issue. Please check your internet and try again.";
+      } else if (error.message.includes("timeout")) {
+        errorMessage = "AI detection is taking too long. Please try with shorter text.";
+      } else if (error.message.includes("unavailable")) {
+        errorMessage = "AI detection service is temporarily unavailable. Please try again later.";
+      }
+      
       toast({ 
-        title: "AI Detection Error", 
-        description: error.message, 
+        title: "AI Detection Failed", 
+        description: errorMessage, 
         variant: "destructive" 
       });
       setAiProbability(0); 
@@ -386,8 +467,8 @@ export default function ProfessionalHumanizerPage() {
     
     if (user?.plan === "free" && wordCount > 300) {
       toast({ 
-        title: "Word Limit Exceeded", 
-        description: "Free users can paraphrase up to 300 words at a time. Please upgrade for more.", 
+        title: "Per-Request Limit Exceeded", 
+        description: "Free users can paraphrase up to 300 words per request. Current text has " + wordCount + " words. Please reduce your text or upgrade for unlimited per-request usage.", 
         variant: "destructive" 
       });
       return;
@@ -453,18 +534,28 @@ export default function ProfessionalHumanizerPage() {
                     <div className="text-xs text-muted-foreground">
                       <span className="font-medium">Words:</span> {inputWordCount} | 
                       <span className="font-medium ml-1">Chars:</span> {inputCharCount}
+                      {user?.plan === "free" && (
+                        <span className="ml-2 text-orange-600 dark:text-orange-400">
+                          (Max: 300 per request, 1000 per day)
+                        </span>
+                      )}
                     </div>
                     {user?.plan === "free" && inputWordCount > 300 && (
                       <Badge variant="destructive" className="text-xs">
-                        Word limit exceeded
+                        Per-request limit exceeded
                       </Badge>
                     )}
                   </div>
                   {user?.plan === "free" && inputWordCount > 300 && (
                     <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-md flex items-center justify-between">
-                      <span className="text-sm text-red-600 dark:text-red-400">
-                        Upgrade to paraphrase longer texts
-                      </span>
+                      <div className="flex-1">
+                        <span className="text-sm text-red-600 dark:text-red-400 block">
+                          Per-request limit exceeded ({inputWordCount}/300 words)
+                        </span>
+                        <span className="text-xs text-red-500 dark:text-red-300">
+                          Free users: 300 words per request, 1000 words per day
+                        </span>
+                      </div>
                       <Link href="/pricing">
                         <Button 
                           size="sm" 
@@ -552,7 +643,6 @@ export default function ProfessionalHumanizerPage() {
                         <SelectItem value="marketing">Marketing</SelectItem>
                         <SelectItem value="story">Story/Narrative</SelectItem>
                         <SelectItem value="blog">Blog Post</SelectItem>
-                        <SelectItem value="paraphrase">Simple Paraphrase</SelectItem>
                       </SelectContent>
                     </Select>
                           </span>
@@ -690,7 +780,7 @@ export default function ProfessionalHumanizerPage() {
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {aiProbability > 0 
                             ? `This text appears ${aiProbability < 30 ? 'human-written' : aiProbability < 70 ? 'potentially AI-generated' : 'likely AI-generated'}`
-                            : 'Analyze text to detect AI probability'}
+                            : 'Click Analyze to detect AI probability in your text'}
                         </p>
                       </div>
                     </div>
@@ -709,8 +799,9 @@ export default function ProfessionalHumanizerPage() {
                       <span className="ml-2">Analyze</span>
                     </Button>
                   </div>
+                  
                   {aiProbability > 0 && (
-                    <div className="mt-4">
+                    <div className="mt-4 space-y-3">
                       <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                         <span>Human-like</span>
                         <span>AI-generated</span>
@@ -725,6 +816,51 @@ export default function ProfessionalHumanizerPage() {
                               : 'progress-green'
                         }`}
                       />
+                      
+                      {/* AI Detection Results Summary */}
+                      <div className={`p-3 rounded-md ${
+                        aiProbability < 30 
+                          ? 'bg-green-50 dark:bg-green-900/20' 
+                          : aiProbability < 70 
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20'
+                            : 'bg-red-50 dark:bg-red-900/20'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {aiProbability < 30 ? (
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          ) : aiProbability < 70 ? (
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          ) : (
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          )}
+                          <span className={`text-xs font-medium ${
+                            aiProbability < 30 
+                              ? 'text-green-700 dark:text-green-300' 
+                              : aiProbability < 70 
+                                ? 'text-yellow-700 dark:text-yellow-300'
+                                : 'text-red-700 dark:text-red-300'
+                          }`}>
+                            {aiProbability < 30 
+                              ? 'Passes AI Detection - Appears Human' 
+                              : aiProbability < 70 
+                                ? 'Mixed Signals - May Need Refinement'
+                                : 'High AI Score - Consider Humanizing'}
+                          </span>
+                        </div>
+                        <p className={`text-xs mt-1 ${
+                          aiProbability < 30 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : aiProbability < 70 
+                              ? 'text-yellow-600 dark:text-yellow-400'
+                              : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {aiProbability < 30 
+                            ? 'This content should bypass most AI detection tools successfully.'
+                            : aiProbability < 70 
+                              ? 'Consider running the humanizer again for better results.'
+                              : 'This text will likely be flagged by AI detection systems.'}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </CardContent>

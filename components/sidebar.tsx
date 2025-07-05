@@ -177,32 +177,31 @@ const sidebarItems: SidebarSection[] = [
 			},
 		],
 	},
-].filter(Boolean) as {
-	title: string | null
-	items: {
-		title: string
-		href: string
-		icon: React.ElementType
-		premium?: boolean
-		badge?: string
-		external?: boolean
-	}[]
-}
+]
 
 export default function Sidebar() {
 	const pathname = usePathname()
 	const [collapsed, setCollapsed] = useState(false)
 	const { logout, user } = useAuth()
 
-	// Then in the sidebar component, add this near the top where other state is defined:
-	const isOnTrial = isTrialActive(user)
-	const remainingTrialDays = getRemainingTrialDays(user)
+	// Convert User to PublicUser format for trial functions
+	const publicUser = user ? {
+		id: user.id,
+		name: user.name,
+		email: user.email,
+		role: user.role,
+		plan: user.plan === 'premium' ? 'pro' : user.plan as 'free' | 'pro' | 'enterprise',
+		createdAt: user.createdAt?.toString() || new Date().toISOString(),
+	} : null
+
+	const isOnTrial = isTrialActive(publicUser)
+	const remainingTrialDays = getRemainingTrialDays(publicUser)
 
 	const handleLogout = () => {
 		logout()
 	}
 
-	const isPremium = user?.plan === "pro" || user?.plan === "enterprise"
+	const isPremium = user?.plan === "premium"
 
 	return (
 		<div
@@ -261,6 +260,34 @@ export default function Sidebar() {
 
 			<ScrollArea className="flex-1 overflow-auto py-2">
 				<TooltipProvider delayDuration={0}>
+					{/* Trial Status Display */}
+					{isOnTrial && (
+						<div className={cn("py-2", collapsed ? "px-2" : "px-3")}>
+							{!collapsed && (
+								<div className="mb-2 px-4 bg-amber-100 dark:bg-amber-900/30 rounded-md p-2">
+									<div className="flex items-center gap-2">
+										<Crown className="h-4 w-4 text-amber-500" />
+										<span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+											Premium Trial: {remainingTrialDays}d left
+										</span>
+									</div>
+								</div>
+							)}
+							{collapsed && (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div className="flex justify-center mb-2">
+											<div className="bg-amber-100 dark:bg-amber-900/30 rounded-full p-1">
+												<Crown className="h-4 w-4 text-amber-500" />
+											</div>
+										</div>
+									</TooltipTrigger>
+									<TooltipContent side="right">Premium Trial: {remainingTrialDays} days left</TooltipContent>
+								</Tooltip>
+							)}
+						</div>
+					)}
+
 					{sidebarItems.map(
 						(group, i) =>
 							// Only show admin section if user is admin
@@ -268,32 +295,6 @@ export default function Sidebar() {
 								<div key={i} className={cn("py-2", collapsed ? "px-2" : "px-3")}>
 									{group.title && !collapsed && (
 										<h3 className="mb-2 px-4 text-xs font-semibold text-muted-foreground">{group.title}</h3>
-									)}
-									{isOnTrial && (
-										<div className={cn("py-2", collapsed ? "px-2" : "px-3")}>
-											{!collapsed && (
-												<div className="mb-2 px-4 bg-amber-100 dark:bg-amber-900/30 rounded-md p-2">
-													<div className="flex items-center gap-2">
-														<Crown className="h-4 w-4 text-amber-500" />
-														<span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-															Premium Trial: {remainingTrialDays}d left
-														</span>
-													</div>
-												</div>
-											)}
-											{collapsed && (
-												<Tooltip>
-													<TooltipTrigger asChild>
-														<div className="flex justify-center mb-2">
-															<div className="bg-amber-100 dark:bg-amber-900/30 rounded-full p-1">
-																<Crown className="h-4 w-4 text-amber-500" />
-															</div>
-														</div>
-													</TooltipTrigger>
-													<TooltipContent side="right">Premium Trial: {remainingTrialDays} days left</TooltipContent>
-												</Tooltip>
-											)}
-										</div>
 									)}
 									<div className="space-y-1">
 										{group.items.map((item, j) =>

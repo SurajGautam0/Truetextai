@@ -1,267 +1,627 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { 
+  Settings, 
+  Shield, 
+  Database, 
+  Globe, 
+  Zap, 
+  Bell, 
+  Key, 
+  Users, 
+  FileText,
+  Save,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Server
+} from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+
+interface SystemSettings {
+  siteName: string
+  siteDescription: string
+  maintenanceMode: boolean
+  registrationEnabled: boolean
+  emailVerification: boolean
+  maxFileSize: number
+  rateLimitPerMinute: number
+  aiProvider: string
+  aiApiKey: string
+  databaseBackupEnabled: boolean
+  backupFrequency: string
+  logLevel: string
+  emailNotifications: boolean
+  securityAlerts: boolean
+  autoScaling: boolean
+  cacheEnabled: boolean
+  cdnEnabled: boolean
+}
+
+const defaultSettings: SystemSettings = {
+  siteName: "TrueText AI",
+  siteDescription: "Advanced AI-powered text analysis and writing tools",
+  maintenanceMode: false,
+  registrationEnabled: true,
+  emailVerification: true,
+  maxFileSize: 10,
+  rateLimitPerMinute: 100,
+  aiProvider: "openai",
+  aiApiKey: "sk-...",
+  databaseBackupEnabled: true,
+  backupFrequency: "daily",
+  logLevel: "info",
+  emailNotifications: true,
+  securityAlerts: true,
+  autoScaling: true,
+  cacheEnabled: true,
+  cdnEnabled: false
+}
 
 export default function AdminSettings() {
   const { toast } = useToast()
+  const [settings, setSettings] = useState<SystemSettings>(defaultSettings)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
 
-  // General settings
-  const [siteName, setSiteName] = useState("TrueTextAI")
-  const [siteDescription, setSiteDescription] = useState("AI-powered writing assistant")
-  const [contactEmail, setContactEmail] = useState("support@truetextai.com")
+  useEffect(() => {
+    fetchSettings()
+  }, [])
 
-  // API settings
-  const [apiRateLimit, setApiRateLimit] = useState("100")
-  const [defaultModel, setDefaultModel] = useState("gpt-4o")
-  const [enableLogging, setEnableLogging] = useState(true)
-
-  // Security settings
-  const [sessionTimeout, setSessionTimeout] = useState("7")
-  const [requireMFA, setRequireMFA] = useState(false)
-  const [passwordPolicy, setPasswordPolicy] = useState("medium")
-
-  // Email settings
-  const [smtpServer, setSmtpServer] = useState("smtp.example.com")
-  const [smtpPort, setSmtpPort] = useState("587")
-  const [smtpUser, setSmtpUser] = useState("notifications@truetextai.com")
-  const [smtpPassword, setSmtpPassword] = useState("••••••••••••")
-  const [emailFrom, setEmailFrom] = useState("noreply@truetextai.com")
-
-  const [globalWordLimit, setGlobalWordLimit] = useState(1000)
-
-  const handleSaveGeneral = () => {
-    // In a real app, this would be an API call
-    // await fetch('/api/admin/settings/general', {
-    //   method: 'POST',
-    //   body: JSON.stringify({
-    //     siteName,
-    //     siteDescription,
-    //     contactEmail,
-    //   }),
-    // })
-
-    toast({
-      title: "Settings saved",
-      description: "General settings have been updated successfully.",
-    })
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/settings')
+      if (!response.ok) {
+        throw new Error('Failed to fetch settings')
+      }
+      
+      const data = await response.json()
+      const fetchedSettings = data.settings || defaultSettings
+      
+      // Convert string values to appropriate types
+      const typedSettings = {
+        ...fetchedSettings,
+        maintenanceMode: fetchedSettings.maintenanceMode === 'true',
+        registrationEnabled: fetchedSettings.registrationEnabled === 'true',
+        emailVerification: fetchedSettings.emailVerification === 'true',
+        maxFileSize: parseInt(fetchedSettings.maxFileSize) || 10,
+        rateLimitPerMinute: parseInt(fetchedSettings.rateLimitPerMinute) || 100,
+        databaseBackupEnabled: fetchedSettings.databaseBackupEnabled === 'true',
+        emailNotifications: fetchedSettings.emailNotifications === 'true',
+        securityAlerts: fetchedSettings.securityAlerts === 'true',
+        autoScaling: fetchedSettings.autoScaling === 'true',
+        cacheEnabled: fetchedSettings.cacheEnabled === 'true',
+        cdnEnabled: fetchedSettings.cdnEnabled === 'true'
+      }
+      
+      setSettings(typedSettings)
+      setLoading(false)
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+      setSettings(defaultSettings)
+      setLoading(false)
+      toast({
+        title: "Using default settings",
+        description: "Could not load system settings, using defaults.",
+        variant: "default",
+      })
+    }
   }
 
-  const handleSaveAPI = () => {
-    // In a real app, this would be an API call
-    toast({
-      title: "API settings saved",
-      description: "API configuration has been updated successfully.",
-    })
+  const saveSettings = async () => {
+    try {
+      setSaving(true)
+      
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save settings')
+      }
+      
+      setHasChanges(false)
+      toast({
+        title: "Settings saved",
+        description: "System settings have been updated successfully.",
+      })
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      toast({
+        title: "Error saving settings",
+        description: "Could not save system settings.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleSaveSecurity = () => {
-    // In a real app, this would be an API call
-    toast({
-      title: "Security settings saved",
-      description: "Security configuration has been updated successfully.",
-    })
+  const handleSettingChange = (key: keyof SystemSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }))
+    setHasChanges(true)
   }
 
-  const handleSaveEmail = () => {
-    // In a real app, this would be an API call
-    toast({
-      title: "Email settings saved",
-      description: "Email configuration has been updated successfully.",
-    })
+  const resetToDefaults = () => {
+    setSettings(defaultSettings)
+    setHasChanges(true)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(3)].map((_, j) => (
+                  <div key={j} className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">System Settings</h2>
-        <p className="text-muted-foreground">Configure system-wide settings and preferences.</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">System Settings</h2>
+          <p className="text-muted-foreground mt-1">
+            Configure system behavior, security, and performance settings.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={resetToDefaults}
+            disabled={saving}
+          >
+            Reset to Defaults
+          </Button>
+          <Button 
+            onClick={saveSettings}
+            disabled={saving || !hasChanges}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="api">API</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="email">Email</TabsTrigger>
-        </TabsList>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* General Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              General Settings
+            </CardTitle>
+            <CardDescription>
+              Basic site configuration and appearance settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="siteName">Site Name</Label>
+              <Input
+                id="siteName"
+                value={settings.siteName}
+                onChange={(e) => handleSettingChange('siteName', e.target.value)}
+                placeholder="Enter site name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="siteDescription">Site Description</Label>
+              <Textarea
+                id="siteDescription"
+                value={settings.siteDescription}
+                onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
+                placeholder="Enter site description"
+                rows={3}
+              />
+            </div>
 
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>Configure basic information about your application.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="site-name">Site Name</Label>
-                <Input id="site-name" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Maintenance Mode</Label>
+                <p className="text-sm text-muted-foreground">
+                  Temporarily disable the site for maintenance
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="site-description">Site Description</Label>
-                <Textarea
-                  id="site-description"
-                  value={siteDescription}
-                  onChange={(e) => setSiteDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact-email">Contact Email</Label>
-                <Input
-                  id="contact-email"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveGeneral}>Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+              <Switch
+                checked={settings.maintenanceMode}
+                onCheckedChange={(checked) => handleSettingChange('maintenanceMode', checked)}
+              />
+            </div>
 
-        <TabsContent value="api">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Settings</CardTitle>
-              <CardDescription>Configure API rate limits and default models.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="rate-limit">API Rate Limit (requests per minute)</Label>
-                <Input
-                  id="rate-limit"
-                  type="number"
-                  value={apiRateLimit}
-                  onChange={(e) => setApiRateLimit(e.target.value)}
-                />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>User Registration</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow new users to register
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="default-model">Default AI Model</Label>
-                <Select value={defaultModel} onValueChange={setDefaultModel}>
-                  <SelectTrigger id="default-model">
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                    <SelectItem value="gpt-4">GPT-4</SelectItem>
-                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
-                    <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch id="enable-logging" checked={enableLogging} onCheckedChange={setEnableLogging} />
-                <Label htmlFor="enable-logging">Enable API Request Logging</Label>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveAPI}>Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+              <Switch
+                checked={settings.registrationEnabled}
+                onCheckedChange={(checked) => handleSettingChange('registrationEnabled', checked)}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Configure security policies and authentication settings.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="session-timeout">Session Timeout (days)</Label>
-                <Input
-                  id="session-timeout"
-                  type="number"
-                  value={sessionTimeout}
-                  onChange={(e) => setSessionTimeout(e.target.value)}
-                />
+        {/* Security Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Security Settings
+            </CardTitle>
+            <CardDescription>
+              Configure security policies and authentication.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Email Verification</Label>
+                <p className="text-sm text-muted-foreground">
+                  Require email verification for new accounts
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch id="require-mfa" checked={requireMFA} onCheckedChange={setRequireMFA} />
-                <Label htmlFor="require-mfa">Require Multi-Factor Authentication</Label>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password-policy">Password Policy</Label>
-                <Select value={passwordPolicy} onValueChange={setPasswordPolicy}>
-                  <SelectTrigger id="password-policy">
-                    <SelectValue placeholder="Select policy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low (8+ characters)</SelectItem>
-                    <SelectItem value="medium">Medium (8+ chars, mixed case, numbers)</SelectItem>
-                    <SelectItem value="high">High (12+ chars, mixed case, numbers, symbols)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveSecurity}>Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+              <Switch
+                checked={settings.emailVerification}
+                onCheckedChange={(checked) => handleSettingChange('emailVerification', checked)}
+              />
+            </div>
 
-        <TabsContent value="email">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email Settings</CardTitle>
-              <CardDescription>Configure email server settings for notifications.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="smtp-server">SMTP Server</Label>
-                <Input id="smtp-server" value={smtpServer} onChange={(e) => setSmtpServer(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp-port">SMTP Port</Label>
-                <Input id="smtp-port" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp-user">SMTP Username</Label>
-                <Input id="smtp-user" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp-password">SMTP Password</Label>
-                <Input
-                  id="smtp-password"
-                  type="password"
-                  value={smtpPassword}
-                  onChange={(e) => setSmtpPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email-from">From Email Address</Label>
-                <Input id="email-from" type="email" value={emailFrom} onChange={(e) => setEmailFrom(e.target.value)} />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveEmail}>Save Changes</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            <div className="space-y-2">
+              <Label htmlFor="rateLimit">Rate Limit (per minute)</Label>
+              <Input
+                id="rateLimit"
+                type="number"
+                value={settings.rateLimitPerMinute}
+                onChange={(e) => handleSettingChange('rateLimitPerMinute', parseInt(e.target.value))}
+                min="1"
+                max="1000"
+              />
+            </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-2">Global Word Limit</h3>
-        <p className="text-sm text-muted-foreground mb-4">Set the maximum number of words allowed per user (default applies if user-specific limit is not set).</p>
-        <Input
-          type="number"
-          min={0}
-          value={globalWordLimit}
-          onChange={e => setGlobalWordLimit(parseInt(e.target.value))}
-          className="w-40"
-        />
+            <div className="space-y-2">
+              <Label htmlFor="maxFileSize">Max File Size (MB)</Label>
+              <Input
+                id="maxFileSize"
+                type="number"
+                value={settings.maxFileSize}
+                onChange={(e) => handleSettingChange('maxFileSize', parseInt(e.target.value))}
+                min="1"
+                max="100"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Security Alerts</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable security alert notifications
+                </p>
+              </div>
+              <Switch
+                checked={settings.securityAlerts}
+                onCheckedChange={(checked) => handleSettingChange('securityAlerts', checked)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              AI Configuration
+            </CardTitle>
+            <CardDescription>
+              Configure AI providers and API settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="aiProvider">AI Provider</Label>
+              <Select
+                value={settings.aiProvider}
+                onValueChange={(value) => handleSettingChange('aiProvider', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select AI provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="anthropic">Anthropic</SelectItem>
+                  <SelectItem value="groq">Groq</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="aiApiKey">API Key</Label>
+              <Input
+                id="aiApiKey"
+                type="password"
+                value={settings.aiApiKey}
+                onChange={(e) => handleSettingChange('aiApiKey', e.target.value)}
+                placeholder="Enter API key"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                <Key className="mr-1 h-3 w-3" />
+                API Key Status
+              </Badge>
+              <Badge variant="default" className="bg-green-100 text-green-800">
+                <CheckCircle className="mr-1 h-3 w-3" />
+                Valid
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Database & Backup */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Database & Backup
+            </CardTitle>
+            <CardDescription>
+              Database configuration and backup settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Auto Backup</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable automatic database backups
+                </p>
+              </div>
+              <Switch
+                checked={settings.databaseBackupEnabled}
+                onCheckedChange={(checked) => handleSettingChange('databaseBackupEnabled', checked)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="backupFrequency">Backup Frequency</Label>
+              <Select
+                value={settings.backupFrequency}
+                onValueChange={(value) => handleSettingChange('backupFrequency', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="logLevel">Log Level</Label>
+              <Select
+                value={settings.logLevel}
+                onValueChange={(value) => handleSettingChange('logLevel', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select log level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="debug">Debug</SelectItem>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warn">Warning</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                <Clock className="mr-1 h-3 w-3" />
+                Last Backup
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                2 hours ago
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="h-5 w-5" />
+              Performance
+            </CardTitle>
+            <CardDescription>
+              Optimize system performance and caching.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Auto Scaling</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable automatic resource scaling
+                </p>
+              </div>
+              <Switch
+                checked={settings.autoScaling}
+                onCheckedChange={(checked) => handleSettingChange('autoScaling', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Cache Enabled</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable response caching
+                </p>
+              </div>
+              <Switch
+                checked={settings.cacheEnabled}
+                onCheckedChange={(checked) => handleSettingChange('cacheEnabled', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>CDN Enabled</Label>
+                <p className="text-sm text-muted-foreground">
+                  Use content delivery network
+                </p>
+              </div>
+              <Switch
+                checked={settings.cdnEnabled}
+                onCheckedChange={(checked) => handleSettingChange('cdnEnabled', checked)}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>System Status</Label>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Database</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Cache</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>API</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <span>CDN</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notifications
+            </CardTitle>
+            <CardDescription>
+              Configure email and system notifications.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Email Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Send email notifications for system events
+                </p>
+              </div>
+              <Switch
+                checked={settings.emailNotifications}
+                onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notification Types</Label>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="user-signup" defaultChecked />
+                  <Label htmlFor="user-signup" className="text-sm">User signups</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="system-alerts" defaultChecked />
+                  <Label htmlFor="system-alerts" className="text-sm">System alerts</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="backup-complete" defaultChecked />
+                  <Label htmlFor="backup-complete" className="text-sm">Backup completion</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="api-errors" />
+                  <Label htmlFor="api-errors" className="text-sm">API errors</Label>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>Recent Notifications</Label>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>Database backup completed</span>
+                  <span className="text-muted-foreground ml-auto">2h ago</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-3 w-3 text-yellow-600" />
+                  <span>High API usage detected</span>
+                  <span className="text-muted-foreground ml-auto">4h ago</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span>New user registered</span>
+                  <span className="text-muted-foreground ml-auto">6h ago</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

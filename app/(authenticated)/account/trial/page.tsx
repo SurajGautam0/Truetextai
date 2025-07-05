@@ -12,12 +12,12 @@ import { isTrialActive, isEligibleForTrial, getRemainingTrialDays, TRIAL_DURATIO
 import { useState } from "react"
 
 export default function TrialManagementPage() {
-  const { user, startTrial, cancelTrial } = useAuth()
+  const { user, startTrial } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
-  const isPremium = user?.plan === "pro" || user?.plan === "enterprise"
+  const isPremium = user?.plan === "premium"
   const isOnTrial = isTrialActive(user)
   const canStartTrial = isEligibleForTrial(user)
   const remainingDays = getRemainingTrialDays(user)
@@ -54,28 +54,12 @@ export default function TrialManagementPage() {
   }
 
   const handleCancelTrial = async () => {
-    if (!user) return
-
-    setIsLoading(true)
-    try {
-      const success = await cancelTrial()
-      if (success) {
-        toast({
-          title: "Trial cancelled",
-          description: "Your premium trial has been cancelled.",
-        })
-        router.refresh()
-      }
-    } catch (error) {
-      console.error("Error cancelling trial:", error)
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again later.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    // TODO: Implement cancel trial functionality
+    toast({
+      title: "Not implemented",
+      description: "Cancel trial functionality is not yet implemented.",
+      variant: "destructive",
+    })
   }
 
   if (isPremium) {

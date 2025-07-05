@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getSettings, createSetting } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
+import { getSettings, updateSetting, createSetting } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,39 +10,74 @@ export async function GET(request: NextRequest) {
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json({ settings: [] });
+
+    // Get settings from database
+    const settings = await getSettings()
+    
+    // Transform settings into the expected format
+    const settingsMap = settings.reduce((acc, setting) => {
+      acc[setting.key] = setting.value
+      return acc
+    }, {} as Record<string, string>)
+
+    // Return default settings if database is empty
+    const defaultSettings = {
+      siteName: "TrueText AI",
+      siteDescription: "Advanced AI-powered text analysis and writing tools",
+      maintenanceMode: "false",
+      registrationEnabled: "true",
+      emailVerification: "true",
+      maxFileSize: "10",
+      rateLimitPerMinute: "100",
+      aiProvider: "openai",
+      aiApiKey: "sk-...",
+      databaseBackupEnabled: "true",
+      backupFrequency: "daily",
+      logLevel: "info",
+      emailNotifications: "true",
+      securityAlerts: "true",
+      autoScaling: "true",
+      cacheEnabled: "true",
+      cdnEnabled: "false"
     }
 
-    const settings = await getSettings()
-    return NextResponse.json({ settings })
+    const mergedSettings = { ...defaultSettings, ...settingsMap }
+
+    return NextResponse.json({ settings: mergedSettings })
   } catch (error) {
     console.error("Error fetching settings:", error)
     return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
     // Check if user is admin
     const session = await getServerSession(authOptions)
     if (!session || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json({ error: "Database not available" }, { status: 503 });
+
+    const body = await request.json()
+    const { settings } = body
+
+    if (!settings || typeof settings !== 'object') {
+      return NextResponse.json({ error: "Invalid settings data" }, { status: 400 })
     }
 
-    const { key, value, description } = await request.json()
+    // Update each setting in the database
+    const updatePromises = Object.entries(settings).map(([key, value]) => {
+      return updateSetting(key, String(value))
+    })
 
-    if (!key || value === undefined) {
-      return NextResponse.json({ error: "Key and value are required" }, { status: 400 })
-    }
+    await Promise.all(updatePromises)
 
-    const setting = await createSetting(key, value, description || "")
-    return NextResponse.json({ setting })
+    return NextResponse.json({ 
+      message: "Settings updated successfully",
+      settings 
+    })
   } catch (error) {
-    console.error("Error creating/updating setting:", error)
-    return NextResponse.json({ error: "Failed to create/update setting" }, { status: 500 })
+    console.error("Error updating settings:", error)
+    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 })
   }
 }

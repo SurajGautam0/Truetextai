@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
 import { callGroq, type Message } from "@/lib/groq"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { getUsageLogs } from "@/lib/db"
 
 // Academic model types mapped to OpenRouter engines
 type AssignmentModel = "ninja-3.2" | "stealth-2.0" | "ghost-1.5"
@@ -24,6 +27,11 @@ type CitationStyle = "apa" | "mla" | "chicago" | "harvard" | "ieee"
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+    const user = session.user
     const data = await request.json()
 
     const {
@@ -43,6 +51,28 @@ export async function POST(request: Request) {
 
     if (!topic && !documentContent) {
       return NextResponse.json({ error: "Topic or document content is required" }, { status: 400 })
+    }
+
+    // ENFORCE DAILY WORD LIMIT FOR FREE USERS
+    if (user.plan === "free") {
+      // Fetch today's usage logs
+      const logs = await getUsageLogs(1000, 0, Number(user.id))
+      const today = new Date()
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      let dailyWordsUsed = 0
+      for (const log of logs) {
+        const logDate = new Date(log.created_at)
+        if (logDate >= todayStart) {
+          dailyWordsUsed += log.tokens_used || 0
+        }
+      }
+      const requestedWords = data.wordCount || 1000
+      if (dailyWordsUsed + requestedWords > 1000) {
+        const remaining = Math.max(0, 1000 - dailyWordsUsed)
+        return NextResponse.json({
+          error: `Daily word limit exceeded. You have ${remaining} words remaining today (${dailyWordsUsed}/1000 used). Your current request requires ${requestedWords} words. Please reduce your request or upgrade for unlimited daily usage.`
+        }, { status: 403 })
+      }
     }
 
     // Create system prompt tailored to UK academic writing
