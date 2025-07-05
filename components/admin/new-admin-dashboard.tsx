@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 
 interface User {
   id: string;
@@ -76,15 +77,15 @@ const NewAdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-background p-8 dark:bg-background">
       <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-        <span className="text-gray-500">Welcome, Admin</span>
+        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+        <span className="text-muted-foreground">Welcome, Admin</span>
       </header>
       <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* User Management */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">User Management</h2>
+        <Card className="rounded-2xl shadow-lg p-6 border border-muted-foreground/10 bg-background/80">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">User Management</h2>
           {loading ? (
             <p>Loading users...</p>
           ) : error ? (
@@ -102,16 +103,17 @@ const NewAdminDashboard = () => {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.id} className="border-t">
-                      <td className="px-2 py-1">{user.name}</td>
-                      <td className="px-2 py-1">{user.email}</td>
-                      <td className="px-2 py-1">{user.role === "admin" ? (
-                        <span className="font-bold text-blue-600">Admin</span>
-                      ) : (
-                        <span>User</span>
-                      )}
+                    <tr key={user.id} className="border-t border-muted-foreground/10">
+                      <td className="px-2 py-1 text-foreground">{user.name}</td>
+                      <td className="px-2 py-1 text-muted-foreground">{user.email}</td>
+                      <td className="px-2 py-1">
+                        {user.role === "admin" ? (
+                          <span className="font-bold text-blue-600 dark:text-blue-400">Admin</span>
+                        ) : (
+                          <span>User</span>
+                        )}
                         <select
-                          className="ml-2 border rounded px-1 py-0.5"
+                          className="ml-2 border rounded px-1 py-0.5 bg-background text-foreground"
                           value={user.role}
                           onChange={e => handleRoleChange(user.id, e.target.value as "user" | "admin")}
                         >
@@ -121,7 +123,7 @@ const NewAdminDashboard = () => {
                       </td>
                       <td className="px-2 py-1">
                         <button
-                          className="text-red-600 hover:underline"
+                          className="text-red-600 dark:text-red-400 hover:underline"
                           onClick={() => handleDelete(user.id)}
                         >
                           Delete
@@ -133,22 +135,22 @@ const NewAdminDashboard = () => {
               </table>
             </div>
           )}
-        </section>
+        </Card>
         {/* Analytics */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Analytics</h2>
-          <p className="text-gray-600">View platform statistics and analytics.</p>
-        </section>
+        <Card className="rounded-2xl shadow-lg p-6 border border-muted-foreground/10 bg-background/80">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Analytics</h2>
+          <p className="text-muted-foreground">View platform statistics and analytics.</p>
+        </Card>
         {/* Logs */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Logs</h2>
-          <p className="text-gray-600">Review system and user activity logs.</p>
-        </section>
+        <Card className="rounded-2xl shadow-lg p-6 border border-muted-foreground/10 bg-background/80">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Logs</h2>
+          <p className="text-muted-foreground">Review system and user activity logs.</p>
+        </Card>
         {/* Settings */}
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Settings</h2>
-          <p className="text-gray-600">Configure admin and platform settings.</p>
-        </section>
+        <Card className="rounded-2xl shadow-lg p-6 border border-muted-foreground/10 bg-background/80">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Settings</h2>
+          <p className="text-muted-foreground">Configure admin and platform settings.</p>
+        </Card>
       </main>
     </div>
   );

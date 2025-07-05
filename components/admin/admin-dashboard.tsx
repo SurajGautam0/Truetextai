@@ -238,7 +238,6 @@ export default function AdminDashboard() {
       toast({
         title: "Dashboard updated",
         description: "Latest data has been refreshed successfully.",
-        variant: "success",
       })
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -252,7 +251,7 @@ export default function AdminDashboard() {
       toast({
         title: "Using cached data",
         description: "Could not fetch latest data, showing cached information.",
-        variant: "warning",
+        variant: "default",
       })
     } finally {
       setRefreshing(false)
@@ -272,11 +271,11 @@ export default function AdminDashboard() {
 
   const getSeverityColor = (severity: RecentActivity['severity']) => {
     switch (severity) {
-      case 'success': return 'bg-green-100 text-green-800'
-      case 'warning': return 'bg-amber-100 text-amber-800'
-      case 'error': return 'bg-red-100 text-red-800'
+      case 'success': return 'text-green-600'
+      case 'warning': return 'text-amber-600'
+      case 'error': return 'text-red-600'
       case 'info': 
-      default: return 'bg-blue-100 text-blue-800'
+      default: return 'text-blue-600'
     }
   }
 
@@ -296,7 +295,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
@@ -313,18 +312,17 @@ export default function AdminDashboard() {
             size="sm"
             onClick={fetchDashboardData}
             disabled={refreshing}
-            className="hover:bg-gray-100 transition-colors"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button asChild variant="outline" className="hover:bg-gray-100 transition-colors">
+          <Button asChild variant="outline">
             <Link href="/admin/users">
               <Users className="mr-2 h-4 w-4" />
               Manage Users
             </Link>
           </Button>
-          <Button asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 transition-opacity">
+          <Button asChild>
             <Link href="/admin/settings">
               <Settings className="mr-2 h-4 w-4" />
               Settings
@@ -335,7 +333,7 @@ export default function AdminDashboard() {
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden transition-transform hover:scale-[1.02]">
+        <Card className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -356,7 +354,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden transition-transform hover:scale-[1.02]">
+        <Card className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
@@ -376,7 +374,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden transition-transform hover:scale-[1.02]">
+        <Card className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-red-500/10" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-sm font-medium">Documents Processed</CardTitle>
@@ -396,7 +394,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden transition-transform hover:scale-[1.02]">
+        <Card className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
@@ -417,7 +415,7 @@ export default function AdminDashboard() {
 
       {/* System Health */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="transition-transform hover:scale-[1.02]">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
             <Cpu className="h-4 w-4 text-muted-foreground" />
@@ -428,17 +426,13 @@ export default function AdminDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{systemMetrics?.cpu}%</div>
-                <Progress 
-                  value={systemMetrics?.cpu} 
-                  className="h-2 mt-2" 
-                  indicatorColor={systemMetrics?.cpu && systemMetrics.cpu > 80 ? 'bg-red-500' : 'bg-blue-500'}
-                />
+                <Progress value={systemMetrics?.cpu} className="h-2 mt-2" />
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="transition-transform hover:scale-[1.02]">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
             <HardDrive className="h-4 w-4 text-muted-foreground" />
@@ -449,17 +443,13 @@ export default function AdminDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{systemMetrics?.memory}%</div>
-                <Progress 
-                  value={systemMetrics?.memory} 
-                  className="h-2 mt-2" 
-                  indicatorColor={systemMetrics?.memory && systemMetrics.memory > 80 ? 'bg-red-500' : 'bg-blue-500'}
-                />
+                <Progress value={systemMetrics?.memory} className="h-2 mt-2" />
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="transition-transform hover:scale-[1.02]">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Disk Usage</CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
@@ -470,17 +460,13 @@ export default function AdminDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{systemMetrics?.disk}%</div>
-                <Progress 
-                  value={systemMetrics?.disk} 
-                  className="h-2 mt-2" 
-                  indicatorColor={systemMetrics?.disk && systemMetrics.disk > 80 ? 'bg-red-500' : 'bg-blue-500'}
-                />
+                <Progress value={systemMetrics?.disk} className="h-2 mt-2" />
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="transition-transform hover:scale-[1.02]">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Network</CardTitle>
             <Network className="h-4 w-4 text-muted-foreground" />
@@ -491,11 +477,7 @@ export default function AdminDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{systemMetrics?.network}%</div>
-                <Progress 
-                  value={systemMetrics?.network} 
-                  className="h-2 mt-2" 
-                  indicatorColor={systemMetrics?.network && systemMetrics.network > 80 ? 'bg-red-500' : 'bg-blue-500'}
-                />
+                <Progress value={systemMetrics?.network} className="h-2 mt-2" />
               </>
             )}
           </CardContent>
@@ -503,68 +485,31 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800">
-          <TabsTrigger 
-            value="overview" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-700"
-          >
-            Overview
-          </TabsTrigger>
-          <TabsTrigger 
-            value="analytics" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-700"
-          >
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger 
-            value="activity" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-700"
-          >
-            Activity
-          </TabsTrigger>
-          <TabsTrigger 
-            value="system" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-700"
-          >
-            System
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             {/* User Growth Chart */}
-            <Card className="col-span-4 transition-transform hover:scale-[1.005]">
+            <Card className="col-span-4">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
-                  User Growth
-                </CardTitle>
+                <CardTitle>User Growth</CardTitle>
                 <CardDescription>Monthly user growth and trends</CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                  <Skeleton className="h-[300px] w-full" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={userGrowthData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis 
-                        dataKey="month" 
-                        tick={{ fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                      />
-                      <YAxis 
-                        tick={{ fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          borderColor: '#e5e7eb',
-                          borderRadius: '0.5rem',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}
-                      />
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
                       <Legend />
                       <Line 
                         type="monotone" 
@@ -572,7 +517,6 @@ export default function AdminDashboard() {
                         stroke="#3B82F6" 
                         strokeWidth={2}
                         dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -581,12 +525,9 @@ export default function AdminDashboard() {
             </Card>
 
             {/* Recent Users */}
-            <Card className="col-span-3 transition-transform hover:scale-[1.005]">
+            <Card className="col-span-3">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-purple-600" />
-                  Recent Users
-                </CardTitle>
+                <CardTitle>Recent Users</CardTitle>
                 <CardDescription>Latest user registrations</CardDescription>
               </CardHeader>
               <CardContent>
@@ -605,9 +546,9 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {stats?.recentUsers.map((user) => (
-                      <div key={user.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div key={user.id} className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-blue-100 text-blue-800">
+                          <AvatarFallback>
                             {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -627,27 +568,19 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="border-t pt-4">
-                <Button variant="outline" size="sm" className="w-full hover:bg-gray-100">
-                  View All Users
-                </Button>
-              </CardFooter>
             </Card>
           </div>
 
           {/* Usage by Feature */}
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="transition-transform hover:scale-[1.005]">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-500" />
-                  Usage by Feature
-                </CardTitle>
+                <CardTitle>Usage by Feature</CardTitle>
                 <CardDescription>Token consumption across different features</CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                  <Skeleton className="h-[300px] w-full" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
@@ -662,67 +595,32 @@ export default function AdminDashboard() {
                         dataKey="total"
                       >
                         {stats?.usageByFeature.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={COLORS[index % COLORS.length]} 
-                            stroke="#ffffff"
-                            strokeWidth={2}
-                          />
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        formatter={(value) => formatNumber(Number(value))}
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          borderColor: '#e5e7eb',
-                          borderRadius: '0.5rem',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}
-                      />
+                      <Tooltip formatter={(value) => formatNumber(Number(value))} />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="transition-transform hover:scale-[1.005]">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-green-600" />
-                  Documents by Type
-                </CardTitle>
+                <CardTitle>Documents by Type</CardTitle>
                 <CardDescription>Distribution of processed documents</CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                  <Skeleton className="h-[300px] w-full" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={stats?.documentsByType}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis 
-                        dataKey="document_type" 
-                        tick={{ fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                      />
-                      <YAxis 
-                        tick={{ fill: '#6b7280' }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          borderColor: '#e5e7eb',
-                          borderRadius: '0.5rem',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}
-                      />
-                      <Bar 
-                        dataKey="count" 
-                        fill="#10B981" 
-                        radius={[4, 4, 0, 0]}
-                        animationDuration={1500}
-                      />
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="document_type" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#10B981" />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -733,35 +631,18 @@ export default function AdminDashboard() {
 
         <TabsContent value="analytics" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="transition-transform hover:scale-[1.005]">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-blue-600" />
-                  Usage Trends
-                </CardTitle>
+                <CardTitle>Usage Trends</CardTitle>
                 <CardDescription>Hourly API usage patterns</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={usageTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="hour" 
-                      tick={{ fill: '#6b7280' }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: '#6b7280' }}
-                      axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        borderColor: '#e5e7eb',
-                        borderRadius: '0.5rem',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                      }}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="hour" />
+                    <YAxis />
+                    <Tooltip />
                     <Legend />
                     <Area 
                       type="monotone" 
@@ -784,12 +665,9 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="transition-transform hover:scale-[1.005]">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart2 className="h-5 w-5 text-purple-600" />
-                  Performance Metrics
-                </CardTitle>
+                <CardTitle>Performance Metrics</CardTitle>
                 <CardDescription>System performance indicators</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -798,11 +676,7 @@ export default function AdminDashboard() {
                     <span>Uptime</span>
                     <span className="font-medium">{systemMetrics?.uptime}%</span>
                   </div>
-                  <Progress 
-                    value={systemMetrics?.uptime} 
-                    className="h-2" 
-                    indicatorColor={systemMetrics?.uptime && systemMetrics.uptime < 99 ? 'bg-amber-500' : 'bg-green-500'}
-                  />
+                  <Progress value={systemMetrics?.uptime} className="h-2" />
                 </div>
                 
                 <div className="space-y-2">
@@ -813,18 +687,17 @@ export default function AdminDashboard() {
                   <Progress 
                     value={Math.max(0, 100 - (systemMetrics?.responseTime || 0) / 2)} 
                     className="h-2" 
-                    indicatorColor={systemMetrics?.responseTime && systemMetrics.responseTime > 200 ? 'bg-red-500' : 'bg-green-500'}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
-                  <div className="text-center p-3 rounded-lg bg-blue-50">
+                  <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
                       {formatNumber(stats?.totalUsers || 0)}
                     </div>
                     <div className="text-xs text-muted-foreground">Total Users</div>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-green-50">
+                  <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
                       {formatNumber(stats?.totalDocuments || 0)}
                     </div>
@@ -837,33 +710,27 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
-          <Card className="transition-transform hover:scale-[1.005]">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-                Recent Activity
-              </CardTitle>
+              <CardTitle>Recent Activity</CardTitle>
               <CardDescription>Latest system events and user actions</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-3 p-3 rounded-lg border">
-                      <Skeleton className="h-4 w-4 rounded-full" />
+                    <div key={i} className="flex items-center space-x-3">
+                      <Skeleton className="h-4 w-4" />
                       <Skeleton className="h-4 flex-1" />
                       <Skeleton className="h-4 w-20" />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {recentActivity.map((activity) => (
-                    <div 
-                      key={activity.id} 
-                      className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors"
-                    >
-                      <div className={`p-2 rounded-full ${getSeverityColor(activity.severity)}`}>
+                    <div key={activity.id} className="flex items-center space-x-3 p-3 rounded-lg border">
+                      <div className={`p-2 rounded-full bg-muted ${getSeverityColor(activity.severity)}`}>
                         {getActivityIcon(activity.type)}
                       </div>
                       <div className="flex-1">
@@ -893,7 +760,7 @@ export default function AdminDashboard() {
               )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" size="sm" className="w-full hover:bg-gray-100">
+              <Button variant="outline" size="sm" className="w-full">
                 View All Activity
               </Button>
             </CardFooter>
@@ -901,4 +768,96 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Security Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">SSL Certificate</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Valid
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Firewall</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Active
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Rate Limiting</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Enabled
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  API Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">AI Checker</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Online
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Paraphraser</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Online
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Assignment Writer</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Online
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  Database Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Connection</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Connected
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Backup</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Recent
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Performance</span>
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    Optimal
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
