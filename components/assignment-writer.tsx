@@ -24,7 +24,7 @@ export default function AssignmentWriter() {
   const [level, setLevel] = useState("undergraduate")
   const [wordCount, setWordCount] = useState(1000)
   const [style, setStyle] = useState("academic")
-  const [model, setModel] = useState("ninja-3.2")
+  const [model, setModel] = useState("gpt-4")
   const [humanLevel, setHumanLevel] = useState(80)
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState("")
@@ -453,9 +453,9 @@ export default function AssignmentWriter() {
                       <SelectValue placeholder="Select model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ninja-3.2">Ninja 3.2 (Fast)</SelectItem>
-                      <SelectItem value="stealth-2.0">Stealth 2.0 (Balanced)</SelectItem>
-                      <SelectItem value="ghost-1.5">Ghost 1.5 (Advanced)</SelectItem>
+                      <SelectItem value="gpt-4">GPT-4 (High Quality)</SelectItem>
+                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo (Fast & Quality)</SelectItem>
+                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

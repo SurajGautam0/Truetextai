@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { callGroq, type Message } from "@/lib/groq"
+import { callOpenAIWithFallback, type Message } from "@/lib/openai-client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { getUsageLogs } from "@/lib/db"
 
-// Academic model types mapped to OpenRouter engines
-type AssignmentModel = "ninja-3.2" | "stealth-2.0" | "ghost-1.5"
+// Academic model types mapped to OpenAI models
+type AssignmentModel = "gpt-4" | "gpt-4-turbo" | "gpt-3.5-turbo"
 
 // UK Academic levels
 type AcademicLevel = "high-school" | "undergraduate" | "masters" | "phd"
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       level = "undergraduate" as AcademicLevel,
       wordCount = 1000,
       style = "academic" as WritingStyle,
-      model = "ninja-3.2" as AssignmentModel,
+      model = "gpt-4" as AssignmentModel,
       humanLevel = 85,
       instructions = "",
       references = "",
@@ -111,7 +111,7 @@ Avoid paraphrasing verbatim—demonstrate critical analysis, independent thinkin
     }
 
     try {
-      // Prepare messages for OpenRouter
+      // Prepare messages for OpenAI
       const messages: Message[] = [
         { role: "system", content: systemPrompt },
         {
@@ -120,8 +120,8 @@ Avoid paraphrasing verbatim—demonstrate critical analysis, independent thinkin
         },
       ]
 
-      // Call OpenRouter API
-      const completion = await callGroq(model, messages, {
+      // Call OpenAI API
+      const completion = await callOpenAIWithFallback(model, messages, {
         temperature: 0.7,
         max_tokens: 2000,
       })

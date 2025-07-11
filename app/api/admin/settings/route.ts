@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const settings = await getSettings()
     
     // Transform settings into the expected format
-    const settingsMap = settings.reduce((acc, setting) => {
+    const settingsMap = settings.reduce((acc: Record<string, string>, setting: { key: string; value: string }) => {
       acc[setting.key] = setting.value
       return acc
     }, {} as Record<string, string>)
@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
       securityAlerts: "true",
       autoScaling: "true",
       cacheEnabled: "true",
-      cdnEnabled: "false"
+      cdnEnabled: "false",
+      isParaphraserEnabled: "true",
+      paraphraserDisabledMessage: "The paraphrasing tool is currently undergoing maintenance. We expect to be back shortly. Thank you for your patience."
     }
 
     const mergedSettings = { ...defaultSettings, ...settingsMap }

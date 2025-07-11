@@ -7,15 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { 
-  Loader2, 
-  Copy, 
-  Download, 
-  Sparkles, 
-  BrainCircuit, 
-  FileText, 
-  Settings2, 
-  Wand2, 
+import {
+  Loader2,
+  Copy,
+  Download,
+  Sparkles,
+  BrainCircuit,
+  FileText,
+  Settings2,
+  Wand2,
   Edit,
   AlertTriangle,
   ChevronDown,
@@ -23,43 +23,48 @@ import {
   Repeat
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import Confetti from "react-confetti";
 import { useAuth } from "@/contexts/auth-context";
-import Link from "next/link";
-import { db } from "@/lib/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import Confetti from 'react-confetti';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-type ModelType = "python-journalist-api" | "python-huggingface" | "truetext-rewriter" | "truetext-render-api";
+// Admin Configuration
+const adminConfig = {
+  isParaphraserEnabled: true, // Set to false to disable the paraphraser
+  disabledMessage: "The paraphrasing tool is currently undergoing maintenance. We expect to be back shortly. Thank you for your patience.", // Custom message to show when disabled
+};
+
+type ModelType = "truetext-render-api" | "python-journalist-api" | "python-huggingface";
 type StyleType = "general" | "academic" | "marketing" | "story" | "blog" | "paraphrase";
 type DetectorModeType = "normal" | "aggressive" | "ultra";
 
-const CircularProgress = ({ 
-  percentage, 
-  statusText 
-}: { 
-  percentage: number; 
-  statusText: string 
+const CircularProgress = ({
+  percentage,
+  statusText
+}: {
+  percentage: number;
+  statusText: string
 }) => {
   const circumference = 2 * Math.PI * 25;
   const offset = circumference - (percentage / 100) * circumference;
-  
+
   let strokeColor = "stroke-gray-400 dark:stroke-gray-600";
   let textColor = "text-gray-500 dark:text-gray-400";
 
   if (statusText !== "Not Yet Analyzed" && statusText !== "Analyzing...") {
-    strokeColor = percentage > 70 
-      ? "stroke-red-500" 
-      : percentage > 40 
-        ? "stroke-yellow-500" 
+    strokeColor = percentage > 70
+      ? "stroke-red-500"
+      : percentage > 40
+        ? "stroke-yellow-500"
         : "stroke-green-500";
-    textColor = percentage > 70 
-      ? "text-red-500" 
-      : percentage > 40 
-        ? "text-yellow-500" 
+    textColor = percentage > 70
+      ? "text-red-500"
+      : percentage > 40
+        ? "text-yellow-500"
         : "text-green-500";
   }
 
@@ -123,11 +128,11 @@ export default function ProfessionalHumanizerPage() {
   const [aiProbability, setAiProbability] = useState(0);
   const [processingTime, setProcessingTime] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  
+
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuth();
-  
+
   const exampleText = "Artificial intelligence is transforming the way we live and work, making tasks easier and more efficient.";
 
   // Effects
@@ -153,14 +158,14 @@ export default function ProfessionalHumanizerPage() {
   }, [aiProbability, outputText, isLoading, isCheckingAI]);
 
   // Derived values
-  const currentAiStatusText = 
+  const currentAiStatusText =
     (isLoading && !isCheckingAI) ? "Processing..." :
-    isCheckingAI ? "Analyzing..." :
-    !outputText && aiProbability === 0 && !isLoading && !isCheckingAI ? "Not Yet Analyzed" :
-    aiProbability < 30 ? "Likely Human" :
-    aiProbability < 70 ? "Potentially AI" : 
-    "Likely AI";
-  
+      isCheckingAI ? "Analyzing..." :
+        !outputText && aiProbability === 0 && !isLoading && !isCheckingAI ? "Not Yet Analyzed" :
+          aiProbability < 30 ? "Likely Human" :
+            aiProbability < 70 ? "Potentially AI" :
+              "Likely AI";
+
   const isHumanQuality = aiProbability < 30 && (outputText !== "" || (aiProbability !== 0 && !isLoading && !isCheckingAI));
 
   // Helper functions
@@ -181,12 +186,12 @@ export default function ProfessionalHumanizerPage() {
           enhanced: true
         })
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`TrueText Render API request failed: ${response.status} - ${errorText.substring(0, 100)}`);
       }
-      
+
       const result = await response.json();
       return {
         processedText: result.rewritten_text || "",
@@ -194,16 +199,16 @@ export default function ProfessionalHumanizerPage() {
         timeTaken: `${(Math.random() + 0.5).toFixed(1)}s`,
       };
     } catch (error: any) {
-      toast({ 
-        title: "TrueText Render API Error", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "TrueText Render API Error",
+        description: error.message,
+        variant: "destructive"
       });
-      return { 
-        processedText: "", 
-        aiScore: 0, 
-        timeTaken: "0s", 
-        error: true 
+      return {
+        processedText: "",
+        aiScore: 0,
+        timeTaken: "0s",
+        error: true
       };
     }
   };
@@ -211,52 +216,52 @@ export default function ProfessionalHumanizerPage() {
   // Main actions
   const humanizeAction = useCallback(async (textToProcess: string, isRefinement: boolean = false) => {
     if (!isAuthenticated && !isRefinement) {
-      toast({ 
-        title: "Authentication Required", 
-        description: "Please log in to use this feature.", 
-        variant: "destructive" 
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to use this feature.",
+        variant: "destructive"
       });
       return;
     }
-    
+
     const wordCount = textToProcess.trim().split(/\s+/).filter(Boolean).length;
-    
+
     if (user?.plan === "free") {
       // Check per-request word limit
       if (wordCount > 300) {
-        toast({ 
-          title: "Per-Request Limit Exceeded", 
-          description: "Free users can paraphrase up to 300 words per request. Please reduce your text or upgrade for unlimited usage.", 
-          variant: "destructive" 
+        toast({
+          title: "Per-Request Limit Exceeded",
+          description: "Free users can paraphrase up to 300 words per request. Please reduce your text or upgrade for unlimited usage.",
+          variant: "destructive"
         });
         return;
       }
-      
+
       // Check daily word limit - need to fetch current usage
       try {
         const res = await fetch(`/api/usage-logs?limit=1000&userId=${user.id}`);
         const data = await res.json();
-        
+
         if (res.ok) {
           // Calculate today's usage
           const today = new Date();
           const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
           let dailyWordsUsed = 0;
-          
+
           for (const log of data.logs) {
             const logDate = new Date(log.created_at);
             if (logDate >= todayStart) {
               dailyWordsUsed += log.tokens_used || 0;
             }
           }
-          
+
           // Check if this request would exceed daily limit
           if (dailyWordsUsed + wordCount > 1000) {
             const remaining = Math.max(0, 1000 - dailyWordsUsed);
-            toast({ 
-              title: "Daily Word Limit Exceeded", 
-              description: `You have ${remaining} words remaining today (${dailyWordsUsed}/1000 used). Your current request requires ${wordCount} words. Please reduce your text or upgrade for unlimited daily usage.`, 
-              variant: "destructive" 
+            toast({
+              title: "Daily Word Limit Exceeded",
+              description: `You have ${remaining} words remaining today (${dailyWordsUsed}/1000 used). Your current request requires ${wordCount} words. Please reduce your text or upgrade for unlimited daily usage.`,
+              variant: "destructive"
             });
             return;
           }
@@ -266,34 +271,34 @@ export default function ProfessionalHumanizerPage() {
         // Continue with request if we can't check usage
       }
     }
-    
+
     if (wordCount < 5) {
-      toast({ 
-        title: "Input Too Short", 
-        description: "Please provide at least 5 words for better results.", 
-        variant: "destructive" 
+      toast({
+        title: "Input Too Short",
+        description: "Please provide at least 5 words for better results.",
+        variant: "destructive"
       });
       return;
     }
-    
+
     setIsLoading(true);
     if (!isRefinement) {
       setOutputText("");
       setAiProbability(0);
     }
     setProcessingTime(null);
-    
+
     try {
       const resultPayload = await handleTrueTextRenderAPI(textToProcess);
-      
+
       if (resultPayload && !resultPayload.error) {
         setOutputText(cleanOutput(resultPayload.processedText));
         setAiProbability(resultPayload.aiScore);
         setProcessingTime(resultPayload.timeTaken);
-        toast({ 
-          title: `Text Processed Successfully`, 
-          description: `Output updated. AI detection score: ${resultPayload.aiScore}%`, 
-          variant: "default" 
+        toast({
+          title: `Text Processed Successfully`,
+          description: `Output updated. AI detection score: ${resultPayload.aiScore}%`,
+          variant: "default"
         });
         // Write usage log to Firestore
         if (user) {
@@ -313,14 +318,14 @@ export default function ProfessionalHumanizerPage() {
       }
     } catch (error: any) {
       console.error("Humanization error:", error);
-      toast({ 
-        title: "Processing Error", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Processing Error",
+        description: error.message,
+        variant: "destructive"
       });
-      if (!isRefinement) { 
-        setOutputText(""); 
-        setAiProbability(0); 
+      if (!isRefinement) {
+        setOutputText("");
+        setAiProbability(0);
       }
     } finally {
       setIsLoading(false);
@@ -330,10 +335,10 @@ export default function ProfessionalHumanizerPage() {
   const handlePrimaryHumanize = () => humanizeAction(inputText);
   const handleRefineHumanize = () => {
     if (!outputText) {
-      toast({ 
-        title: "Nothing to Refine", 
-        description: "Please humanize text first before refining.", 
-        variant: "default" 
+      toast({
+        title: "Nothing to Refine",
+        description: "Please humanize text first before refining.",
+        variant: "default"
       });
       return;
     }
@@ -343,26 +348,26 @@ export default function ProfessionalHumanizerPage() {
   const handleCheckForAI = async () => {
     const textToCheck = showOriginalInOutput ? inputText : outputText || inputText;
     if (textToCheck.trim().length < 50) {
-      toast({ 
-        title: "Text Too Short", 
-        description: "Minimum 50 characters required for accurate AI detection.", 
-        variant: "destructive" 
+      toast({
+        title: "Text Too Short",
+        description: "Minimum 50 characters required for accurate AI detection.",
+        variant: "destructive"
       });
       return;
     }
 
-    setIsCheckingAI(true); 
-    setAiProbability(0); 
+    setIsCheckingAI(true);
+    setAiProbability(0);
 
     try {
       // Enhanced AI detection with multiple fallback options
-      const response = await fetch('/api/check-ai', { 
+      const response = await fetch('/api/check-ai', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           text: textToCheck.trim(),
           source: 'paraphraser-tool',
           timestamp: new Date().toISOString()
@@ -375,19 +380,19 @@ export default function ProfessionalHumanizerPage() {
         const errorMessage = result.error || result.detail || `AI detection service error (${response.status})`;
         throw new Error(errorMessage);
       }
-      
+
       if (typeof result.ai_probability === 'number' && result.ai_probability >= 0 && result.ai_probability <= 100) {
         const probability = Math.round(result.ai_probability);
         setAiProbability(probability);
-        
-        const statusMessage = probability < 30 
+
+        const statusMessage = probability < 30
           ? `Excellent! This text appears naturally human-written (${probability}% AI probability).`
-          : probability < 70 
+          : probability < 70
             ? `Caution: This text may be AI-generated (${probability}% AI probability).`
             : `Warning: This text is likely AI-generated (${probability}% AI probability).`;
-            
-        toast({ 
-          title: "AI Analysis Complete", 
+
+        toast({
+          title: "AI Analysis Complete",
           description: statusMessage,
           variant: probability < 30 ? "default" : "destructive"
         });
@@ -396,7 +401,7 @@ export default function ProfessionalHumanizerPage() {
       }
     } catch (error: any) {
       console.error("AI detection error:", error);
-      
+
       // Provide more helpful error messages
       let errorMessage = "Unable to analyze text for AI content.";
       if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
@@ -406,15 +411,15 @@ export default function ProfessionalHumanizerPage() {
       } else if (error.message.includes("unavailable")) {
         errorMessage = "AI detection service is temporarily unavailable. Please try again later.";
       }
-      
-      toast({ 
-        title: "AI Detection Failed", 
-        description: errorMessage, 
-        variant: "destructive" 
+
+      toast({
+        title: "AI Detection Failed",
+        description: errorMessage,
+        variant: "destructive"
       });
-      setAiProbability(0); 
+      setAiProbability(0);
     } finally {
-      setIsCheckingAI(false); 
+      setIsCheckingAI(false);
     }
   };
 
@@ -423,9 +428,9 @@ export default function ProfessionalHumanizerPage() {
     if (textToCopy) {
       navigator.clipboard.writeText(textToCopy)
         .then(() => toast({ title: "Copied to clipboard!" }))
-        .catch(() => toast({ 
-          title: "Copy failed", 
-          variant: "destructive" 
+        .catch(() => toast({
+          title: "Copy failed",
+          variant: "destructive"
         }));
     }
   };
@@ -450,47 +455,62 @@ export default function ProfessionalHumanizerPage() {
   const handleClearOutput = () => setOutputText("");
   const handleTryExample = () => setInputText(exampleText);
 
-  const isHumanizeActionDisabled = 
-    isLoading || 
-    isCheckingAI || 
-    !inputText.trim() || 
+  const isHumanizeActionDisabled =
+    !adminConfig.isParaphraserEnabled ||
+    isLoading ||
+    isCheckingAI ||
+    !inputText.trim() ||
     inputText.trim().split(/\s+/).filter(Boolean).length < 5;
-    
-  const isAICheckActionDisabled = 
-    isLoading || 
-    isCheckingAI || 
+
+  const isAICheckActionDisabled =
+    isLoading ||
+    isCheckingAI ||
     (showOriginalInOutput ? inputText : outputText || inputText).trim().length < 10;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const wordCount = value.trim().split(/\s+/).filter(Boolean).length;
-    
+
     if (user?.plan === "free" && wordCount > 300) {
-      toast({ 
-        title: "Per-Request Limit Exceeded", 
-        description: "Free users can paraphrase up to 300 words per request. Current text has " + wordCount + " words. Please reduce your text or upgrade for unlimited per-request usage.", 
-        variant: "destructive" 
+      toast({
+        title: "Per-Request Limit Exceeded",
+        description: "Free users can paraphrase up to 300 words per request. Current text has " + wordCount + " words. Please reduce your text or upgrade for unlimited per-request usage.",
+        variant: "destructive"
       });
       return;
     }
     setInputText(value);
   };
 
+  if (!adminConfig.isParaphraserEnabled) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900 p-6 text-center">
+        <div className="max-w-md">
+          <AlertTriangle className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Tool Temporarily Disabled</h1>
+          <p className="text-slate-600 dark:text-slate-400">
+            {adminConfig.disabledMessage}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       {showConfetti && (
-        <Confetti 
-          width={window.innerWidth} 
-          height={window.innerHeight} 
-          recycle={false} 
-          numberOfPieces={200} 
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          recycle={false}
+          numberOfPieces={200}
         />
       )}
-      
+
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="flex flex-col gap-6">
               {/* Input Card */}
@@ -498,22 +518,22 @@ export default function ProfessionalHumanizerPage() {
                 <CardHeader className="p-5 pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                      <Edit className="h-5 w-5 text-blue-600 dark:text-blue-400" /> 
+                      <Edit className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       Original Text
                     </CardTitle>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={handleTryExample}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       >
                         Try Example
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleClearInput} 
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearInput}
                         disabled={!inputText}
                         className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
@@ -532,7 +552,7 @@ export default function ProfessionalHumanizerPage() {
                   />
                   <div className="flex items-center justify-between mt-3">
                     <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">Words:</span> {inputWordCount} | 
+                      <span className="font-medium">Words:</span> {inputWordCount} |
                       <span className="font-medium ml-1">Chars:</span> {inputCharCount}
                       {user?.plan === "free" && (
                         <span className="ml-2 text-orange-600 dark:text-orange-400">
@@ -557,9 +577,9 @@ export default function ProfessionalHumanizerPage() {
                         </span>
                       </div>
                       <Link href="/pricing">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30"
                         >
                           Upgrade
@@ -574,7 +594,7 @@ export default function ProfessionalHumanizerPage() {
               <Card className="shadow-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
                 <CardHeader className="p-5 pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                    <Settings2 className="h-5 w-5 text-blue-600 dark:text-blue-400" /> 
+                    <Settings2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     Customization Options
                   </CardTitle>
                 </CardHeader>
@@ -634,17 +654,17 @@ export default function ProfessionalHumanizerPage() {
                               onValueChange={(v) => setStyleOption(v as StyleType)}
                               disabled={user?.plan !== "premium"}
                             >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="academic">Academic</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="story">Story/Narrative</SelectItem>
-                        <SelectItem value="blog">Blog Post</SelectItem>
-                      </SelectContent>
-                    </Select>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select style" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="general">General</SelectItem>
+                                <SelectItem value="academic">Academic</SelectItem>
+                                <SelectItem value="marketing">Marketing</SelectItem>
+                                <SelectItem value="story">Story/Narrative</SelectItem>
+                                <SelectItem value="blog">Blog Post</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </span>
                         </TooltipTrigger>
                         {user?.plan !== "premium" && (
@@ -668,11 +688,11 @@ export default function ProfessionalHumanizerPage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span>
-                      <Input 
-                        type="range" 
+                            <Input
+                              type="range"
                               min={1}
                               max={user?.plan === "free" ? 2 : 10}
-                        value={level} 
+                              value={level}
                               onChange={e => {
                                 const val = Number(e.target.value);
                                 if (user?.plan === "free" && val > 2) {
@@ -682,7 +702,7 @@ export default function ProfessionalHumanizerPage() {
                                 setLevel(val);
                               }}
                               className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-blue-600"
-                      />
+                            />
                           </span>
                         </TooltipTrigger>
                         {user?.plan === "free" && (
@@ -704,23 +724,23 @@ export default function ProfessionalHumanizerPage() {
                 <CardHeader className="p-5 pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                      <Wand2 className="h-5 w-5 text-purple-600 dark:text-purple-400" /> 
+                      <Wand2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                       Humanized Output
                     </CardTitle>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleCopy} 
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopy}
                         disabled={!outputText}
                         className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
                         <Copy className="h-4 w-4 mr-1" /> Copy
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleDownload} 
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDownload}
                         disabled={!outputText}
                         className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
@@ -752,7 +772,7 @@ export default function ProfessionalHumanizerPage() {
                 <CardFooter className="p-5 pt-0">
                   <div className="w-full text-xs text-muted-foreground flex justify-between items-center">
                     <div>
-                      <span className="font-medium">Words:</span> {outputWordCount} | 
+                      <span className="font-medium">Words:</span> {outputWordCount} |
                       <span className="font-medium ml-1">Chars:</span> {outputCharCount}
                     </div>
                     {processingTime && (
@@ -763,31 +783,31 @@ export default function ProfessionalHumanizerPage() {
                   </div>
                 </CardFooter>
               </Card>
-              
+
               {/* AI Detector Card */}
               <Card className="shadow-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <CircularProgress 
-                        percentage={aiProbability} 
-                        statusText={currentAiStatusText} 
+                      <CircularProgress
+                        percentage={aiProbability}
+                        statusText={currentAiStatusText}
                       />
                       <div>
                         <h4 className="font-semibold text-slate-800 dark:text-slate-100">
                           AI Content Analysis
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {aiProbability > 0 
+                          {aiProbability > 0
                             ? `This text appears ${aiProbability < 30 ? 'human-written' : aiProbability < 70 ? 'potentially AI-generated' : 'likely AI-generated'}`
                             : 'Click Analyze to detect AI probability in your text'}
                         </p>
                       </div>
                     </div>
-                    <Button 
-                      onClick={handleCheckForAI} 
+                    <Button
+                      onClick={handleCheckForAI}
                       disabled={isAICheckActionDisabled}
-                      variant="outline" 
+                      variant="outline"
                       size="sm"
                       className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30"
                     >
@@ -799,32 +819,30 @@ export default function ProfessionalHumanizerPage() {
                       <span className="ml-2">Analyze</span>
                     </Button>
                   </div>
-                  
+
                   {aiProbability > 0 && (
                     <div className="mt-4 space-y-3">
                       <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                         <span>Human-like</span>
                         <span>AI-generated</span>
                       </div>
-                      <Progress 
-                        value={aiProbability} 
-                        className={`h-2 bg-slate-200 dark:bg-slate-700 ${
-                          aiProbability > 70 
+                      <Progress
+                        value={aiProbability}
+                        className={`h-2 bg-slate-200 dark:bg-slate-700 ${aiProbability > 70
                             ? 'progress-red'
-                            : aiProbability > 40 
+                            : aiProbability > 40
                               ? 'progress-yellow'
                               : 'progress-green'
-                        }`}
+                          }`}
                       />
-                      
+
                       {/* AI Detection Results Summary */}
-                      <div className={`p-3 rounded-md ${
-                        aiProbability < 30 
-                          ? 'bg-green-50 dark:bg-green-900/20' 
-                          : aiProbability < 70 
+                      <div className={`p-3 rounded-md ${aiProbability < 30
+                          ? 'bg-green-50 dark:bg-green-900/20'
+                          : aiProbability < 70
                             ? 'bg-yellow-50 dark:bg-yellow-900/20'
                             : 'bg-red-50 dark:bg-red-900/20'
-                      }`}>
+                        }`}>
                         <div className="flex items-center gap-2">
                           {aiProbability < 30 ? (
                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -833,30 +851,28 @@ export default function ProfessionalHumanizerPage() {
                           ) : (
                             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                           )}
-                          <span className={`text-xs font-medium ${
-                            aiProbability < 30 
-                              ? 'text-green-700 dark:text-green-300' 
-                              : aiProbability < 70 
+                          <span className={`text-xs font-medium ${aiProbability < 30
+                              ? 'text-green-700 dark:text-green-300'
+                              : aiProbability < 70
                                 ? 'text-yellow-700 dark:text-yellow-300'
                                 : 'text-red-700 dark:text-red-300'
-                          }`}>
-                            {aiProbability < 30 
-                              ? 'Passes AI Detection - Appears Human' 
-                              : aiProbability < 70 
+                            }`}>
+                            {aiProbability < 30
+                              ? 'Passes AI Detection - Appears Human'
+                              : aiProbability < 70
                                 ? 'Mixed Signals - May Need Refinement'
                                 : 'High AI Score - Consider Humanizing'}
                           </span>
                         </div>
-                        <p className={`text-xs mt-1 ${
-                          aiProbability < 30 
-                            ? 'text-green-600 dark:text-green-400' 
-                            : aiProbability < 70 
+                        <p className={`text-xs mt-1 ${aiProbability < 30
+                            ? 'text-green-600 dark:text-green-400'
+                            : aiProbability < 70
                               ? 'text-yellow-600 dark:text-yellow-400'
                               : 'text-red-600 dark:text-red-400'
-                        }`}>
-                          {aiProbability < 30 
+                          }`}>
+                          {aiProbability < 30
                             ? 'This content should bypass most AI detection tools successfully.'
-                            : aiProbability < 70 
+                            : aiProbability < 70
                               ? 'Consider running the humanizer again for better results.'
                               : 'This text will likely be flagged by AI detection systems.'}
                         </p>
@@ -869,7 +885,7 @@ export default function ProfessionalHumanizerPage() {
               {/* Action Card */}
               <Card className="shadow-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
                 <CardContent className="p-5">
-                  <Button 
+                  <Button
                     size="lg"
                     onClick={handlePrimaryHumanize}
                     disabled={isHumanizeActionDisabled}
@@ -887,7 +903,7 @@ export default function ProfessionalHumanizerPage() {
                       </>
                     )}
                   </Button>
-                  
+
                   {isHumanQuality && (
                     <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-md flex items-center gap-3">
                       <div className="bg-green-100 dark:bg-green-800/50 p-2 rounded-full">

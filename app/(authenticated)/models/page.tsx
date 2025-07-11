@@ -1,4 +1,4 @@
-import { ModelInfoGrid } from "@/components/model-info-card"
+import ModelInfoGrid from "@/components/model-info-card";
 
 export default function ModelsPage() {
   return (
